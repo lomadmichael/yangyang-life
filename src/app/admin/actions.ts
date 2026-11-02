@@ -175,7 +175,8 @@ export async function deletePlace(id: string): Promise<ActionResult> {
 // ───────────────────────── 사진 ─────────────────────────
 
 const PHOTO_BUCKET = "place-photos";
-const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+// Vercel 함수 요청 본문 한도 4.5MB 보다 작게 (next.config.ts bodySizeLimit 4.5mb, PhotoManager MAX_BYTES 와 같이)
+const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 12;
 const PHOTO_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
@@ -198,7 +199,7 @@ export async function uploadPlacePhoto(formData: FormData): Promise<ActionResult
   if (!(file instanceof File) || file.size === 0) return fail("사진 파일을 골라 주세요.");
   const ext = PHOTO_EXT[file.type];
   if (!ext) return fail("JPG·PNG·WEBP 사진만 올릴 수 있어요.");
-  if (file.size > PHOTO_MAX_BYTES) return fail("사진이 5MB보다 커요.");
+  if (file.size > PHOTO_MAX_BYTES) return fail("사진이 너무 커요(4MB 이하). 휴대폰에서 JPG로 저장해 다시 올려 주세요.");
 
   const db = serviceClient();
   try {
@@ -408,7 +409,17 @@ export async function setTipHidden(id: string, hidden: boolean): Promise<ActionR
   if (!admin) return denied;
   if (!isUuid(id)) return fail("잘못된 팁입니다.");
   try {
-    const { data, error } = await serviceClient().from("tips").update({ hidden }).eq("id", id).select("id");
+    const db = serviceClient();
+    if (!hidden) {
+      // 다시 보이게 할 때는 신고 기록을 비운다 — 안 비우면 다음 신고 1건에 3건 이상으로 세어 바로 다시 숨겨진다
+      const { error: delErr } = await db.from("tip_reports").delete().eq("tip_id", id);
+      if (delErr) throw delErr;
+    }
+    const { data, error } = await db
+      .from("tips")
+      .update(hidden ? { hidden } : { hidden, report_count: 0 })
+      .eq("id", id)
+      .select("id");
     if (error) throw error;
     if (!data?.length) return fail("팁을 찾을 수 없어요.");
   } catch (e) {
@@ -416,7 +427,7 @@ export async function setTipHidden(id: string, hidden: boolean): Promise<ActionR
     return fail(SERVER_ERR);
   }
   refreshAll();
-  return { ok: true, message: hidden ? "숨겼어요." : "다시 보이게 했어요." };
+  return { ok: true, message: hidden ? "숨겼어요." : "다시 보이게 했어요. 신고 기록도 비웠어요." };
 }
 
 // ───────────────────────── 기여자 (owner) ─────────────────────────

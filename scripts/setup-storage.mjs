@@ -1,6 +1,6 @@
 // Storage 버킷 `place-photos` 만들기 (R19) — 여러 번 돌려도 안전(있으면 설정만 맞춤).
 //   node scripts/setup-storage.mjs
-// 공개 읽기 · 파일당 5MB · image/jpeg|png|webp. 업로드는 관리 화면 서버 액션(service role)에서만.
+// 공개 읽기 · 파일당 5MB(버킷 상한 — 실제 업로드는 관리 화면에서 4MB 이하로 막음) · image/jpeg|png|webp. 업로드는 관리 화면 서버 액션(service role)에서만.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";

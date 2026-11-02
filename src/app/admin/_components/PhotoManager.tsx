@@ -6,6 +6,9 @@ import { makeCoverPhoto, removePlacePhoto, uploadPlacePhoto } from "../actions";
 import { Notice, btnPrimary, btnSmall } from "./ui";
 
 const MAX_EDGE = 1600;
+/** 서버 액션 PHOTO_MAX_BYTES 와 같은 값. Vercel 함수 요청 한도(4.5MB)보다 작아야 413 이 안 난다 */
+const MAX_BYTES = 4 * 1024 * 1024;
+const TOO_BIG = "사진이 너무 커요(4MB 이하). 휴대폰에서 JPG로 저장해 다시 올려 주세요.";
 
 /** 휴대폰 사진(수 MB·HEIC)을 긴 변 1600px JPEG 로 줄여서 올린다. 줄이기 실패하면 원본 그대로(서버가 형식·크기 검사) */
 async function shrink(file: File): Promise<File> {
@@ -40,9 +43,15 @@ export function PhotoManager({ placeId, photos }: { placeId: string; photos: { n
     start(async () => {
       let last: { ok: boolean; message?: string } = { ok: true };
       for (const f of files) {
+        // 줄이기 실패(예: HEIC 를 못 여는 브라우저)로 원본이 4MB 넘으면 보내기 전에 막는다 — 서버까지 가면 413
+        const small = await shrink(f);
+        if (small.size > MAX_BYTES) {
+          last = { ok: false, message: files.length > 1 ? `「${f.name}」 ${TOO_BIG}` : TOO_BIG };
+          break;
+        }
         const fd = new FormData();
         fd.set("place_id", placeId);
-        fd.set("file", await shrink(f));
+        fd.set("file", small);
         last = await uploadPlacePhoto(fd);
         if (!last.ok) break;
       }
@@ -95,7 +104,7 @@ export function PhotoManager({ placeId, photos }: { placeId: string; photos: { n
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium">사진 올리기</span>
         <input ref={input} type="file" accept="image/*" multiple className="text-sm file:mr-2 file:min-h-11 file:rounded-lg file:border file:border-line file:bg-surface file:px-3" />
-        <span className="text-xs text-muted">한 장 5MB 이하 · 자동으로 줄여서 올려요 · 최대 12장. 사람 얼굴은 동의받은 사진만.</span>
+        <span className="text-xs text-muted">한 장 4MB 이하 · 자동으로 줄여서 올려요 · 최대 12장. 사람 얼굴은 동의받은 사진만.</span>
       </label>
       <button type="button" onClick={upload} disabled={pending} className={btnPrimary}>
         {pending ? "올리는 중…" : "선택한 사진 올리기"}
