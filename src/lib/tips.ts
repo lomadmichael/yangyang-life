@@ -28,18 +28,37 @@ export function isTipKind(v: unknown): v is TipKind {
   return typeof v === "string" && (TIP_KINDS as readonly string[]).includes(v);
 }
 
-// 링크: http(s)://, www., 맨 도메인(abc.com · naver.me/x · shop.co.kr)
-const LINK_RE = /https?:\/\/|\bwww\.|\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/i;
+// 링크: http(s):// 와 www. 는 항상. 맨 도메인은 알려진 TLD 로 끝나거나 바로 뒤에 / 가 올 때만
+// (Mt.Seorak · St.Mary · node.js 같은 영어 문장은 통과)
+export const LINK_TLDS = [
+  "com", "net", "org", "kr", "me", "io", "ly", "gl", "app", "shop", "xyz", "info", "biz", "link", "site", "page",
+] as const; // co.kr 은 kr 로 끝나므로 같이 잡힌다
+const LINK_PROTO_RE = /https?:\/\/|\bwww\./i;
+const LINK_TLD_RE = new RegExp(String.raw`\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:${LINK_TLDS.join("|")})\b`, "i");
+const LINK_SLASH_RE = /\b[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,}\//i;
 
-// 전화: 한국 휴대폰·지역번호·070, 구분자(공백 . -) 있든 없든, +82 국제 표기 포함
-const PHONE_RE = /(?<!\d)(?:\+82[\s.-]?0?|0)(?:1[016789]|2|[3-6][1-5]|70)[\s.-]?\d{3,4}[\s.-]?\d{4}(?!\d)/;
+// 전화: 먼저 NFKC(전각 숫자·괄호 → 반각) 후 여러 대시(‐‑‒–—―−﹘﹣－)·가운뎃점(·•‧∙・･)·괄호를 - 로 바꾼 뒤 본다.
+// 휴대폰·지역번호·070, +82 국제 표기, 구분자 0~3글자(공백 . -) — "010 - 1234 - 5678", "(033) 672-1234"
+const PHONE_SEP_CHARS = new RegExp(String.raw`[‐-―−﹘﹣－·•‧∙・･()[\]]`, "g");
+const SEP = String.raw`[\s.\-]{0,3}`;
+const PHONE_RE = new RegExp(
+  String.raw`(?<!\d)(?:\+?82${SEP}(?:0${SEP})?|0)(?:1[016789]|2|[3-6][1-5]|70)${SEP}\d{3,4}${SEP}\d{4}(?!\d)`,
+);
+// 대표번호 15xx·16xx·18xx + 4자리 (뒤에 「원」이 오면 가격 범위로 보고 제외: 1500-2000원)
+const REP_PHONE_RE = new RegExp(String.raw`(?<!\d)1[568]\d{2}${SEP}\d{4}(?!\d|\s*원)`);
+
+function normalizeForPhone(text: string): string {
+  return text.normalize("NFKC").replace(PHONE_SEP_CHARS, "-");
+}
 
 export function hasLink(text: string): boolean {
-  return LINK_RE.test(text);
+  const s = text.normalize("NFKC");
+  return LINK_PROTO_RE.test(s) || LINK_TLD_RE.test(s) || LINK_SLASH_RE.test(s);
 }
 
 export function hasPhone(text: string): boolean {
-  return PHONE_RE.test(text);
+  const s = normalizeForPhone(text);
+  return PHONE_RE.test(s) || REP_PHONE_RE.test(s);
 }
 
 /** 검사 순서: 종류 → 닉네임 → 길이 → 링크 → 전화 */
