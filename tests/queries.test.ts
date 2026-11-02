@@ -137,10 +137,20 @@ describe.skipIf(!hasDb)("queries (샘플 숨김, YL_SHOW_SAMPLES 없음)", () =>
       expect(await listMenu(p.id)).toEqual([]);
       expect(await listTips("place", p.id)).toEqual([]);
     }
-    expect((await listContributors()).every((c) => !c.display_name.includes("샘플"))).toBe(true);
   });
 
-  it("지금은 실제 데이터가 없으므로 listPlaces() = 0건 (실데이터 입력 시작하면 이 테스트를 지울 것)", async () => {
-    expect(await listPlaces()).toHaveLength(0);
+  it("seed 의 고정 샘플 UUID 는 어느 목록에도 안 나온다 (실데이터가 들어와도 유지되는 검사)", async () => {
+    const sid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => sid(from + i));
+    const samplePlaces = range(101, 104);
+    const disjoint = (ids: string[], sample: string[]) => ids.filter((id) => sample.includes(id));
+
+    expect(disjoint((await listPlaces()).map((p) => p.id), samplePlaces)).toEqual([]);
+    expect(disjoint((await listActivities()).map((a) => a.id), range(301, 305))).toEqual([]);
+    expect(disjoint((await listContributors()).map((c) => c.id), range(1, 3))).toEqual([]);
+    for (const placeId of samplePlaces) {
+      expect(disjoint((await listTips("place", placeId)).map((t) => t.id), range(401, 402))).toEqual([]);
+      expect(await listMenu(placeId)).toEqual([]);
+    }
   });
 });
