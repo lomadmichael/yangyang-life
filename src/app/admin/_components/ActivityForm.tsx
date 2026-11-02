@@ -61,8 +61,8 @@ export function ActivityForm({
             ))}
           </div>
         </Field>
-        <BilingualField label="제목" required ko={v.title_ko} en={v.title_en} onKo={(x) => set("title_ko", x)} onEn={(x) => set("title_en", x)} aiEnabled={aiEnabled} />
-        <BilingualField label="설명" multiline ko={v.desc_ko} en={v.desc_en} onKo={(x) => set("desc_ko", x)} onEn={(x) => set("desc_en", x)} aiEnabled={aiEnabled} />
+        <BilingualField name="title" label="제목" required ko={v.title_ko} en={v.title_en} onKo={(x) => set("title_ko", x)} onEn={(x) => set("title_en", x)} aiEnabled={aiEnabled} />
+        <BilingualField name="desc" label="설명" multiline ko={v.desc_ko} en={v.desc_en} onKo={(x) => set("desc_ko", x)} onEn={(x) => set("desc_en", x)} aiEnabled={aiEnabled} />
       </Card>
 
       <Card title="언제">
@@ -107,7 +107,7 @@ export function ActivityForm({
             </div>
           </>
         )}
-        <BilingualField label="시간 안내" ko={v.time_note_ko} en={v.time_note_en} onKo={(x) => set("time_note_ko", x)} onEn={(x) => set("time_note_en", x)} koPlaceholder="매일 오전 7시" aiEnabled={aiEnabled} />
+        <BilingualField name="time_note" label="시간 안내" ko={v.time_note_ko} en={v.time_note_en} onKo={(x) => set("time_note_ko", x)} onEn={(x) => set("time_note_en", x)} koPlaceholder="매일 오전 7시" aiEnabled={aiEnabled} />
         <label className="inline-flex min-h-11 items-center gap-2 text-sm">
           <input type="checkbox" checked={v.rainy_ok} onChange={(e) => set("rainy_ok", e.target.checked)} className="size-5" />
           비 오는 날에도 할 수 있어요
@@ -125,7 +125,7 @@ export function ActivityForm({
             ))}
           </select>
         </Field>
-        <BilingualField label="장소" ko={v.location_ko} en={v.location_en} onKo={(x) => set("location_ko", x)} onEn={(x) => set("location_en", x)} koPlaceholder="죽도해변" aiEnabled={aiEnabled} />
+        <BilingualField name="location" label="장소" ko={v.location_ko} en={v.location_en} onKo={(x) => set("location_ko", x)} onEn={(x) => set("location_en", x)} koPlaceholder="죽도해변" aiEnabled={aiEnabled} />
         <Field label="링크 (선택)" hint="예약·안내 페이지. https:// 로 시작">
           <input type="url" value={v.link} onChange={(e) => set("link", e.target.value)} inputMode="url" className={inputCls} placeholder="https://" />
         </Field>

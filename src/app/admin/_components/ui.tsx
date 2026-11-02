@@ -9,7 +9,7 @@ export const btnSecondary =
 export const btnDanger =
   "inline-flex min-h-11 items-center justify-center gap-1 rounded-lg border border-salmon-strong bg-surface px-4 font-medium text-salmon-strong hover:bg-salmon-soft disabled:opacity-50";
 export const btnSmall =
-  "inline-flex min-h-9 items-center justify-center rounded-md border border-line bg-surface px-2.5 text-sm text-ink hover:bg-sea-soft disabled:opacity-50";
+  "inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-line bg-surface px-2.5 text-sm text-ink hover:bg-sea-soft disabled:opacity-50";
 
 export function Card({ title, children, aside }: { title?: string; children: React.ReactNode; aside?: React.ReactNode }) {
   return (

@@ -8,6 +8,7 @@ import { btnSmall, inputCls } from "./ui";
  * 국문 · 영문 칸을 나란히. 영문 칸 옆 「Ai 번역 초안」(키가 있을 때만) — 초안은 칸에 채울 뿐 저장은 사람이 누른다.
  */
 export function BilingualField({
+  name,
   label,
   ko,
   en,
@@ -20,6 +21,8 @@ export function BilingualField({
   enPlaceholder,
   hint,
 }: {
+  /** 입력 칸 name 접두어 — {name}_ko / {name}_en */
+  name: string;
   label: string;
   ko: string;
   en: string;
@@ -64,17 +67,17 @@ export function BilingualField({
         <label className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-muted">국문</span>
           {multiline ? (
-            <textarea value={ko} onChange={(e) => onKo(e.target.value)} rows={3} placeholder={koPlaceholder} className={common} required={required} />
+            <textarea name={`${name}_ko`} value={ko} onChange={(e) => onKo(e.target.value)} rows={3} placeholder={koPlaceholder} className={common} required={required} />
           ) : (
-            <input value={ko} onChange={(e) => onKo(e.target.value)} placeholder={koPlaceholder} className={common} required={required} />
+            <input name={`${name}_ko`} value={ko} onChange={(e) => onKo(e.target.value)} placeholder={koPlaceholder} className={common} required={required} />
           )}
         </label>
         <label className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-muted">영문 English (외국인용)</span>
           {multiline ? (
-            <textarea value={en} onChange={(e) => onEn(e.target.value)} rows={3} lang="en" placeholder={enPlaceholder} className={common} />
+            <textarea name={`${name}_en`} value={en} onChange={(e) => onEn(e.target.value)} rows={3} lang="en" placeholder={enPlaceholder} className={common} />
           ) : (
-            <input value={en} onChange={(e) => onEn(e.target.value)} lang="en" placeholder={enPlaceholder} className={common} />
+            <input name={`${name}_en`} value={en} onChange={(e) => onEn(e.target.value)} lang="en" placeholder={enPlaceholder} className={common} />
           )}
         </label>
       </div>
