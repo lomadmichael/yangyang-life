@@ -20,7 +20,7 @@
 
 ## 디자인·부품
 - 공통 부품만 쓴다 (`src/components/`): PlaceCard, ActivityCard, Badge, FilterChips, HoursTable, InfoRow, EmptyState, FallbackNote, BackLink, LangSwitch, MapLinks, MenuMarks, SafeImage, ReportButton, TipForm, TipList, VerifiedLine, SiteFooter. 비슷한 게 있으면 새로 만들지 말고 재사용·확장한다. 관리 화면 입력 부품은 `admin/_components/ui.tsx`.
-- **새 색·새 글꼴 금지.** 색은 `src/app/globals.css`의 토큰(`sea`, `salmon`, `pine`, `sand`, `ink`, `muted`, `line` …)을 Tailwind 클래스(`bg-sea`, `text-muted`)로만 쓴다. 임의 hex·`text-[#...]` 금지. 토큰 자체를 바꾸는 건 디자인 담당 PR에서만.
+- **새 색·새 글꼴 금지.** 색은 `src/app/globals.css`의 토큰(`sea`, `salmon`, `pine`, `sand`, `ink`, `muted`, `line` …)을 Tailwind 클래스(`bg-sea`, `text-muted`)로만 쓴다. 임의 hex, `bg-[...]`/`text-[...]` 같은 임의 값, 인라인 `style={{ color/background }}` 금지. 토큰 자체를 바꾸는 건 디자인 담당 PR에서만.
 - 화면은 **375px 폭 폰이 기준**. 모바일에서 먼저 확인한다.
 
 ## 문구·데이터
@@ -32,8 +32,8 @@
 
 ## 보안 규칙 (어기면 개인정보·관리 권한이 샌다)
 - 공개 화면 읽기는 **`*_public` 뷰 + `anonClient()`** 만 (`queries.ts`). 원본 테이블(`tips`, `contributors` 등)을 직접 읽지 않는다. 비공개 컬럼(연락처·기기 ID·코드 해시·역할)은 뷰에 없다.
-- 쓰기는 **서버 액션 안에서만**, 먼저 `authorize()`/`can()`으로 권한을 검사한 뒤 `serviceClient()`로. 레이아웃의 로그인 검사만 믿지 않는다.
-- `src/lib/supabase.ts`, `session.ts`, `access-code.ts`는 서버 전용(`server-only`). **클라이언트 컴포넌트(`"use client"`)에서 import 금지.**
+- 쓰기는 **서버 액션 안에서만**, 먼저 `authorize()`(`src/app/admin/auth.ts`; 페이지·라우트 핸들러는 같은 파일의 `requireAdmin`/`getAdmin`)와 `can()`(`src/lib/permissions.ts`)으로 권한을 검사한 뒤 `serviceClient()`로. 레이아웃의 로그인 검사만 믿지 않는다.
+- `src/lib/supabase.ts`, `session.ts`, `access-code.ts`는 서버 전용 — **클라이언트 컴포넌트(`"use client"`)에서 import 금지.** (`session.ts`·`access-code.ts`는 `server-only`가 없어 빌드가 막아 주지 않으니 특히 주의)
 - `.env.local`·키·개인 코드는 절대 커밋하지 않는다. 채팅·PR·이슈에도 붙이지 않는다. 새 환경변수는 `.env.example`에 이름만 추가.
 - **DB 스키마 변경은 `supabase/migrations/`에 새 번호 파일(0003_…)로만**, 소유자(이홍래) 검토 후 적용. 이미 적용된 마이그레이션 파일은 수정 금지. 참가자가 DB에 직접 SQL을 실행하지 않는다.
 - 관리자 개인 코드 발급(`scripts/issue-code.mjs`)·`scripts/setup-storage.mjs`는 소유자만 실행한다.

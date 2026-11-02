@@ -6,7 +6,7 @@
 ## 내 컴퓨터에서 실행 (3줄)
 ```
 npm ci
-cp .env.example .env.local     # 값은 PM에게 받아서 채웁니다 (절대 커밋 금지)
+cp .env.example .env.local     # (cmd에서는 `copy`) 값은 PM에게 받아서 채웁니다 (절대 커밋 금지)
 npm run dev                    # http://localhost:3000
 ```
 컴퓨터가 느려지면 `npm run build && npm start`로 확인하세요.
