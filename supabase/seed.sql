@@ -2,10 +2,12 @@
 -- 고정 UUID + on conflict do nothing → 여러 번 돌려도 안전. places.code 는 기본값으로 자동 생성.
 -- 가게·할 거리 이름/주소/좌표는 모두 지어낸 샘플 값이다(실제 가게 아님).
 
--- 기여자 2명 (접속 코드는 Task 6 에서 발급 → access_code_hash 는 비워 둠)
+-- 기여자 3명 (접속 코드는 Task 6 에서 발급 → access_code_hash 는 비워 둠)
+--   003 은 show=false(「만든 사람들」에서 빠짐) — 그래도 확인한 가게의 확인자 이름으로는 표기돼야 함
 insert into public.contributors (id, display_name, team, role_label, cohort, show, role, is_sample) values
   ('00000000-0000-4000-8000-000000000001', '이홍래', '운영', 'PM', null, true, 'owner', true),
-  ('00000000-0000-4000-8000-000000000002', '김샘플', '샘플팀', '현장 조사', '샘플기', true, 'member', true)
+  ('00000000-0000-4000-8000-000000000002', '김샘플', '샘플팀', '현장 조사', '샘플기', true, 'member', true),
+  ('00000000-0000-4000-8000-000000000003', '박숨김', '샘플팀', '현장 조사', '샘플기', false, 'member', true)
 on conflict (id) do nothing;
 
 -- 가게 4곳: 참여 2 · 일반 1 · 휴업 1 (그중 바 1곳은 금·토 18:00~02:00)
@@ -17,7 +19,7 @@ insert into public.places (id, slug, category, status, name_ko, name_en, name_ro
    '메밀 막국수와 수육을 파는 샘플 가게', 'A sample shop serving buckwheat noodles and boiled pork',
    '강원특별자치도 양양군 현남면 샘플로 1', 37.9712, 128.7601,
    '{"mon":[["11:00","20:00"]],"tue":[["11:00","20:00"]],"thu":[["11:00","20:00"]],"fri":[["11:00","20:00"]],"sat":[["11:00","20:00"]],"sun":[["11:00","19:00"]]}',
-   1, true, true, '버스 정류장에서 걸어서 5분 (샘플)', '5-minute walk from the bus stop (sample)', '{}',
+   1, true, true, '버스 정류장에서 걸어서 5분 (샘플)', '5-minute walk from the bus stop (sample)', '{https://example.com/sample-noodle.jpg}',
    'visit', '2026-10-30T10:00:00+09:00', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000002', true),
   ('00000000-0000-4000-8000-000000000102', 'sample-night-bar', 'bar', 'participating',
    '샘플 밤바다 바', 'Sample Night Sea Bar', 'Saempeul Bambada Ba',
@@ -31,8 +33,8 @@ insert into public.places (id, slug, category, status, name_ko, name_en, name_ro
    '바다가 보이는 샘플 카페', 'A sample cafe with a sea view',
    '강원특별자치도 양양군 양양읍 샘플로 3', 38.0754, 128.6190,
    '{"mon":[["09:00","18:00"]],"tue":[["09:00","18:00"]],"wed":[["09:00","18:00"]],"thu":[["09:00","18:00"]],"fri":[["09:00","18:00"]],"sat":[["09:00","21:00"]],"sun":[["09:00","21:00"]]}',
-   2, null, null, null, null, '{}',
-   'public', null, null, '00000000-0000-4000-8000-000000000002', true),
+   2, null, null, null, null, '{https://example.com/sample-cafe.jpg}',
+   'visit', '2026-10-27T15:00:00+09:00', '00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000002', true),
   ('00000000-0000-4000-8000-000000000104', 'sample-surf-shop', 'surf', 'closed',
    '샘플 서핑숍 (휴업)', 'Sample Surf Shop (closed)', 'Saempeul Seoping-sop',
    '겨울 휴업 중인 샘플 서핑숍', 'A sample surf shop closed for winter',
@@ -41,14 +43,15 @@ insert into public.places (id, slug, category, status, name_ko, name_en, name_ro
    'phone', '2026-10-28T14:00:00+09:00', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', true)
 on conflict (id) do nothing;
 
--- 참여 가게 메뉴 6개 (영문 1개는 일부러 빈칸)
+-- 참여 가게 메뉴 6개 (영문 1개는 일부러 빈칸) + 일반(listed) 카페 메뉴 1개(공개 뷰에서 빠져야 함)
 insert into public.menu_items (id, place_id, sort, name_ko, name_roman, name_en, desc_en, price, allergens, vegan, spicy) values
   ('00000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000101', 1, '물막국수', 'Mul-makguksu', 'Cold Buckwheat Noodles in Broth', 'Chilled broth, sample dish', 10000, '{buckwheat,wheat}', false, 0),
   ('00000000-0000-4000-8000-000000000202', '00000000-0000-4000-8000-000000000101', 2, '비빔막국수', 'Bibim-makguksu', 'Spicy Mixed Buckwheat Noodles', 'Sweet and spicy sauce, sample dish', 10000, '{buckwheat,wheat,sesame}', false, 2),
   ('00000000-0000-4000-8000-000000000203', '00000000-0000-4000-8000-000000000101', 3, '수육', 'Suyuk', 'Boiled Pork Slices', null, 18000, '{pork}', false, 0),
   ('00000000-0000-4000-8000-000000000204', '00000000-0000-4000-8000-000000000101', 4, '감자전', 'Gamja-jeon', null, null, 12000, '{}', true, 0),
   ('00000000-0000-4000-8000-000000000205', '00000000-0000-4000-8000-000000000102', 1, '수제 맥주', 'Suje maekju', 'Craft Beer', 'Local sample brew', 8000, '{wheat}', true, 0),
-  ('00000000-0000-4000-8000-000000000206', '00000000-0000-4000-8000-000000000102', 2, '오징어 튀김', 'Ojingeo twigim', 'Fried Squid', null, 15000, '{squid,wheat}', false, 1)
+  ('00000000-0000-4000-8000-000000000206', '00000000-0000-4000-8000-000000000102', 2, '오징어 튀김', 'Ojingeo twigim', 'Fried Squid', null, 15000, '{squid,wheat}', false, 1),
+  ('00000000-0000-4000-8000-000000000207', '00000000-0000-4000-8000-000000000103', 1, '아메리카노', 'Amerikano', 'Americano', 'Listed (non-participating) cafe — must not be public', 5000, '{}', true, 0)
 on conflict (id) do nothing;
 
 -- 할 거리 5건: 진행 중 dated · 끝난 dated · always 평일 · always 주말 · 비 와도 OK (weekdays 0=일 ~ 6=토)
@@ -77,7 +80,7 @@ insert into public.activities (id, kind, title_ko, title_en, desc_ko, desc_en, p
    'interview', '2026-10-29T13:00:00+09:00', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', true)
 on conflict (id) do nothing;
 
--- 팁 2건 (샘플 가게 대상 — 가게가 샘플이라 YL_SHOW_SAMPLES 없으면 화면에 닿지 않음)
+-- 팁 2건 (샘플 가게 대상 — tips_public.is_sample 이 대상의 is_sample 을 따르므로 샘플 숨김이면 안 나옴)
 --   하나는 공개(연락처가 들어 있지만 tips_public 에서 빠지는지 확인용), 하나는 숨김(공개 뷰에 안 나와야 함)
 insert into public.tips (id, target_type, target_id, kind, body, nickname, lang, contact, device_id, hidden, handled_at) values
   ('00000000-0000-4000-8000-000000000401', 'place', '00000000-0000-4000-8000-000000000101', 'tip',

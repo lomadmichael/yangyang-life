@@ -76,12 +76,13 @@ export async function listContributors(): Promise<Contributor[]> {
 }
 
 export async function listTips(targetType: PublicTip["target_type"], targetId: string): Promise<PublicTip[]> {
-  // 팁 자체엔 is_sample 이 없다 — 샘플 대상의 팁은 대상(가게·할 거리)이 숨겨지면 화면에 닿지 않는다.
+  // tips_public.is_sample = 대상(가게·할 거리)의 is_sample → 샘플 대상의 팁도 같은 규칙으로 숨긴다
   const { data, error } = await anonClient()
     .from("tips_public")
     .select("id,target_type,target_id,kind,body,nickname,lang,created_at,handled")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
+    .in("is_sample", sampleValues())
     .order("created_at", { ascending: false });
   if (error) fail("팁", error);
   return (data ?? []) as PublicTip[];

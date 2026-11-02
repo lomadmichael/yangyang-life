@@ -71,6 +71,43 @@ describe.skipIf(!hasDb)("queries (샘플 표시 YL_SHOW_SAMPLES=1)", () => {
     const { data, error } = await db.from("tips").select("contact,device_id");
     expect(error !== null || (data ?? []).length === 0).toBe(true);
   });
+
+  it("anon 원본 테이블은 공개 컬럼을 콕 집어도 못 읽는다 (뷰만 공개 창구)", async () => {
+    const db = anonClient();
+    const probes: [string, string][] = [
+      ["contributors", "display_name,show"],
+      ["tips", "id,body"],
+      ["tips", "hidden,handled_at"],
+      ["places", "id"],
+      ["menu_items", "id"],
+      ["activities", "id"],
+      ["tip_reports", "tip_id"],
+    ];
+    for (const [table, cols] of probes) {
+      const { data, error } = await db.from(table).select(cols);
+      expect(error !== null || (data ?? []).length === 0, `${table}(${cols})`).toBe(true);
+    }
+  });
+
+  it("show=false 기여자는 「만든 사람들」에서 빠지지만 확인자 이름으로는 나온다", async () => {
+    const people = await listContributors();
+    expect(people.map((c) => c.display_name)).not.toContain("박숨김");
+    expect(people.every((c) => c.show)).toBe(true);
+    const cafe = await getPlaceBySlug("sample-beach-cafe");
+    expect(cafe?.verified_by_name).toBe("박숨김");
+  });
+
+  it("사진·영문 메뉴·메뉴는 참여 가게만", async () => {
+    const places = await listPlaces();
+    for (const p of places.filter((x) => x.status !== "participating")) {
+      expect(p.has_english_menu, p.slug).toBe(false);
+      expect(p.photos, p.slug).toEqual([]);
+      expect(await listMenu(p.id), p.slug).toEqual([]);
+    }
+    const noodle = places.find((p) => p.slug === "sample-noodle-house")!;
+    expect(noodle.photos.length).toBeGreaterThan(0);
+    expect((await listMenu(noodle.id)).length).toBe(4);
+  });
 });
 
 describe.skipIf(!hasDb)("queries (샘플 숨김, YL_SHOW_SAMPLES 없음)", () => {
@@ -91,9 +128,19 @@ describe.skipIf(!hasDb)("queries (샘플 숨김, YL_SHOW_SAMPLES 없음)", () =>
       delete process.env.YL_SHOW_SAMPLES;
       return all.filter((p) => p.is_sample);
     })();
+    expect(seeded.length).toBeGreaterThanOrEqual(4);
+    const visibleIds = new Set(places.map((p) => p.id));
     for (const p of seeded) {
+      expect(visibleIds.has(p.id)).toBe(false);
       expect(await getPlaceBySlug(p.slug)).toBeNull();
       expect(await getPlaceByCode(p.code)).toBeNull();
+      expect(await listMenu(p.id)).toEqual([]);
+      expect(await listTips("place", p.id)).toEqual([]);
     }
+    expect((await listContributors()).every((c) => !c.display_name.includes("샘플"))).toBe(true);
+  });
+
+  it("지금은 실제 데이터가 없으므로 listPlaces() = 0건 (실데이터 입력 시작하면 이 테스트를 지울 것)", async () => {
+    expect(await listPlaces()).toHaveLength(0);
   });
 });
