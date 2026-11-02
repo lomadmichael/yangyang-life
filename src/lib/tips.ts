@@ -44,8 +44,9 @@ const SEP = String.raw`[\s.\-]{0,3}`;
 const PHONE_RE = new RegExp(
   String.raw`(?<!\d)(?:\+?82${SEP}(?:0${SEP})?|0)(?:1[016789]|2|[3-6][1-5]|70)${SEP}\d{3,4}${SEP}\d{4}(?!\d)`,
 );
-// 대표번호 15xx·16xx·18xx + 4자리 (뒤에 「원」이 오면 가격 범위로 보고 제외: 1500-2000원)
-const REP_PHONE_RE = new RegExp(String.raw`(?<!\d)1[568]\d{2}${SEP}\d{4}(?!\d|\s*원)`);
+// 대표번호 15xx·16xx·18xx + 4자리. 뒤에 단위·시간 말이 오면 범위로 보고 제외
+// (1500-2000원 가격, 1500-1800 영업 시각, 1800-1900년 연도, 1500-1700까지 / 1500-1800시)
+const REP_PHONE_RE = new RegExp(String.raw`(?<!\d)1[568]\d{2}${SEP}\d{4}(?!\d|\s*(?:원|시|년|영업|까지))`);
 
 function normalizeForPhone(text: string): string {
   return text.normalize("NFKC").replace(PHONE_SEP_CHARS, "-");

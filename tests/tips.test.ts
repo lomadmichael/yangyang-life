@@ -99,6 +99,18 @@ describe("validateTip (fix round 1: phone formats)", () => {
   );
 });
 
+describe("validateTip (대표번호 꼴 범위 — 단위가 붙으면 전화 아님)", () => {
+  it.each(["1500-1800 영업", "1500-1800영업", "1800-1900년", "1500-1700까지", "1500-1800시", "1500-2000 원"])(
+    "does not flag: %s",
+    (s) => {
+      expect(validateTip({ kind: "tip", body: `참고 ${s} 입니다`, nickname: "x" })).toEqual({ ok: true });
+    },
+  );
+  it.each(["1588-1234", "1588-1234 로 전화", "1644-5678 문의"])("still detects: %s", (p) => {
+    expect(validateTip({ kind: "tip", body: `참고 ${p}`, nickname: "x" })).toMatchObject({ reason: "phone" });
+  });
+});
+
 describe("validateTip (fix round 1: bare-domain links need a known TLD or /)", () => {
   it.each(["Mt.Seorak is close", "St.Mary church", "built with node.js", "Ver.2 menu"])("passes: %s", (body) => {
     expect(validateTip({ kind: "tip", body, nickname: "x" })).toEqual({ ok: true });
