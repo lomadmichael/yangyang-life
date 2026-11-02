@@ -103,7 +103,7 @@ export const ko = {
   makersIntro: "양양생활은 Ai 내일바꿈 참가자와 멘토가 현장을 다니며 직접 확인해 채웠어요.",
   makersOtherTeam: "함께한 사람들",
   makersJoinTitle: "여러분도 참여해주세요",
-  makersJoinBody: "가게·행사 상세 맨 아래에 「바뀌었어요」「꿀팁」「가는 법」을 남길 수 있어요. 남겨 주신 내용은 확인을 거쳐 바로 반영돼요.",
+  makersJoinBody: "가게·행사 상세 맨 아래에 「바뀌었어요」「꿀팁」「가는 법」을 남길 수 있어요. 남긴 글은 바로 보이고, 바뀐 정보는 확인한 뒤 가게 정보에 반영해요.",
   makersJoinAction: "가게 둘러보고 팁 남기기",
   emptyMakersTitle: "아직 소개할 사람이 없어요",
 

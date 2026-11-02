@@ -43,4 +43,6 @@ body {
   background: var(--sand);
   color: var(--ink);
   font-family: var(--font-sans);
+  word-break: keep-all;      /* 한글은 낱말 중간에서 줄이 갈리지 않게 */
+  overflow-wrap: anywhere;   /* 아주 긴 영문·주소는 그래도 화면 밖으로 안 나가게 */
 }

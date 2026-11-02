@@ -104,7 +104,7 @@ export const en = {
   makersIntro: "YANGYANG LIFE was put together by the participants and mentors of Ai Naeil-bakkum, who visited and checked each place themselves.",
   makersOtherTeam: "Contributors",
   makersJoinTitle: "Join us",
-  makersJoinBody: "At the bottom of every place and event page you can leave a note: “It changed”, “Tip” or “How to get there”. We check it and update the page.",
+  makersJoinBody: "At the bottom of every place and event page you can leave a note: “It changed”, “Tip” or “How to get there”. Notes appear right away, and we check reported changes before updating the page.",
   makersJoinAction: "Browse places and leave a tip",
   emptyMakersTitle: "No one to introduce yet",
 
