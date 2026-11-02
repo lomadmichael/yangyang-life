@@ -79,11 +79,29 @@ export default async function EditPlacePage({ params }: PageProps<"/admin/places
         )}
       </Card>
 
-      {/* Task 7: QR·인쇄 버튼 자리 — QR(svg/png) 다운로드 · 영어 메뉴판 인쇄 */}
       <Card title="QR · 인쇄">
         <p className="text-sm text-muted">
-          QR 코드 <span className="font-mono">{place.code}</span> — QR 다운로드·메뉴판 인쇄 버튼은 곧 여기에 생겨요.
+          QR 코드 <span className="font-mono">{place.code}</span> — 가게 주소(slug)를 바꿔도 QR 은 그대로 영어 메뉴판으로 가요.
         </p>
+        {participating ? (
+          <div className="flex flex-wrap gap-2">
+            <a href={`/admin/places/${place.id}/qr?format=png`} className={btnSecondary}>
+              QR 다운로드 (PNG)
+            </a>
+            <a href={`/admin/places/${place.id}/qr?format=svg`} className={btnSecondary}>
+              QR 다운로드 (SVG)
+            </a>
+            {menuEn > 0 ? (
+              <a href={`/print/menu/${place.code}`} target="_blank" rel="noreferrer" className={btnSecondary}>
+                영어 메뉴판 인쇄 ↗
+              </a>
+            ) : (
+              <p className="text-sm text-muted">영어 메뉴판 인쇄는 메뉴에 영문 이름을 하나라도 넣으면 열려요.</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">QR·인쇄는 참여 가게만 만들 수 있어요.</p>
+        )}
       </Card>
 
       {can(admin.role, "delete_content") ? (

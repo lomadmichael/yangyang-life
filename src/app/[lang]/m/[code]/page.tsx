@@ -1,33 +1,12 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { FallbackNote } from "@/components/FallbackNote";
-import { hasKey, isLang, pickText, t, type Lang } from "@/i18n";
+import { MenuMarks } from "@/components/MenuMarks";
+import { isLang, pickText, t } from "@/i18n";
 import { formatWon } from "@/lib/format";
 import { getPlaceByCode, listMenu } from "@/lib/queries";
-import type { MenuItem } from "@/lib/types";
-
-function allergenLabel(lang: Lang, code: string): string {
-  const key = `allergen.${code}`;
-  return hasKey(key) ? t(lang, key) : code;
-}
-
-/** 맵기 0~3 → ●●○ (화면 읽기 프로그램에는 「맵기 2/3」) */
-function Spicy({ level, lang }: { level: MenuItem["spicy"]; lang: Lang }) {
-  if (!level) return null;
-  return (
-    <Badge tone="partner">
-      <span aria-hidden="true">
-        {t(lang, "menuSpicy")} {"●".repeat(level) + "○".repeat(3 - level)}
-      </span>
-      <span className="sr-only">
-        {t(lang, "menuSpicy")} {level}/3
-      </span>
-    </Badge>
-  );
-}
 
 // 가게별 고정 주소(QR). 참여 가게 + 영어 메뉴판 있는 곳만 — 아니면 404.
 export default async function MenuPage({ params }: PageProps<"/[lang]/m/[code]">) {
@@ -81,17 +60,7 @@ export default async function MenuPage({ params }: PageProps<"/[lang]/m/[code]">
                 </p>
               ) : null}
               {m.price == null ? <p className="mt-1 text-sm text-muted">{t(lang, "menuAskPrice")}</p> : null}
-              {m.vegan || m.spicy || m.allergens.length ? (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {m.vegan ? <Badge tone="open">{t(lang, "menuVegan")}</Badge> : null}
-                  <Spicy level={m.spicy} lang={lang} />
-                  {m.allergens.length ? (
-                    <Badge tone="muted">
-                      {t(lang, "menuContains")}: {m.allergens.map((a) => allergenLabel(lang, a)).join(", ")}
-                    </Badge>
-                  ) : null}
-                </div>
-              ) : null}
+              <MenuMarks item={m} lang={lang} />
             </li>
           ))}
         </ul>
