@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { draftEnglish, TRANSLATE_MODEL, type MessagesClient } from "../src/lib/translate";
 
 function stub(text: string) {
-  const create = vi.fn(async () => ({ content: [{ type: "text", text }] }));
+  const create = vi.fn(async (args: unknown) => {
+    void args;
+    return { content: [{ type: "text", text }] };
+  });
   const client: MessagesClient = { messages: { create } };
   return { client, create };
 }
