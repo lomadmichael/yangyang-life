@@ -40,11 +40,10 @@ export function photoUrl(name: string): string {
 /** 0=일 ~ 6=토 → 사전 키 */
 export const WEEKDAY_KEYS: DictKey[] = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
 
-/** 상시형 요일: 7일이면 「매일」, 아니면 월요일부터 「매주 토·일」 */
+/** 상시형 요일: 비었거나 7일이면 「매일」, 아니면 월요일부터 「매주 토·일」 */
 export function formatWeekdays(weekdays: number[], lang: Lang): string {
   const set = new Set(weekdays.filter((d) => d >= 0 && d <= 6));
-  if (set.size === 0) return "";
-  if (set.size === 7) return t(lang, "everyDay");
+  if (set.size === 0 || set.size === 7) return t(lang, "everyDay");
   const ordered = [1, 2, 3, 4, 5, 6, 0].filter((d) => set.has(d)).map((d) => t(lang, WEEKDAY_KEYS[d]));
   return tf(lang, "everyWeek", { days: ordered.join(lang === "ko" ? "·" : ", ") });
 }

@@ -51,7 +51,8 @@ describe("formatWeekdays", () => {
     expect(formatWeekdays([0, 1, 2, 3, 4, 5, 6], "ko")).toBe("매일");
     expect(formatWeekdays([0, 6], "ko")).toBe("매주 토·일");
     expect(formatWeekdays([6, 0], "en")).toBe("Every Sat, Sun");
-    expect(formatWeekdays([], "en")).toBe("");
+    expect(formatWeekdays([], "en")).toBe("Every day");
+    expect(formatWeekdays([], "ko")).toBe("매일");
   });
 });
 

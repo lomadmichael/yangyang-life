@@ -53,6 +53,23 @@ describe("activitiesForDay", () => {
     ];
     expect(ids(activitiesForDay(l, now))).toEqual(["soon", "late"]);
   });
+  it("always 요일이 비어 있으면 매일 보임", () => {
+    const l = [act({ id: "any-day", weekdays: [] })];
+    expect(ids(activitiesForDay(l, now))).toEqual(["any-day"]);
+    expect(ids(activitiesForDay(l, new Date("2026-11-16T01:00:00Z")))).toEqual(["any-day"]); // 서울 11-16
+  });
+  it("always 도 끝나는 날이 지났으면 숨김", () => {
+    const l = [act({ id: "ended", weekdays: [], ends_on: "2026-11-13" })];
+    expect(ids(activitiesForDay(l, now))).toEqual([]);
+  });
+  it("always 도 시작일이 아직이면 숨김", () => {
+    const l = [act({ id: "future", weekdays: [6], starts_on: "2026-11-15" })];
+    expect(ids(activitiesForDay(l, now))).toEqual([]);
+  });
+  it("always 기간 경계(시작일=오늘, 끝나는 날=오늘)는 보임", () => {
+    const l = [act({ id: "edge", weekdays: [], starts_on: "2026-11-14", ends_on: "2026-11-14" })];
+    expect(ids(activitiesForDay(l, now))).toEqual(["edge"]);
+  });
   it("서울 날짜 기준: UTC로는 14일이어도 서울 15일 새벽이면 15일로 판정", () => {
     const l = [act({ id: "ends14", kind: "dated", starts_on: "2026-11-14", ends_on: "2026-11-14" })];
     expect(ids(activitiesForDay(l, new Date("2026-11-14T16:00:00Z")))).toEqual([]);

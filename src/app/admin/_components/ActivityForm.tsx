@@ -95,7 +95,7 @@ export function ActivityForm({
                   );
                 })}
               </div>
-              <p className="mt-1 text-xs text-muted">아무것도 안 고르면 「요일 상관없음」으로 보여요.</p>
+              <p className="mt-1 text-xs text-muted">아무것도 안 고르면 「매일」로 보여요. 시작일·끝나는 날을 넣으면 그 기간에만 보여요.</p>
             </fieldset>
             <div className="grid grid-cols-2 gap-2">
               <Field label="시작일 (선택)">

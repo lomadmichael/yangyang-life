@@ -37,7 +37,7 @@ export default async function AdminActivities() {
                 <span className="text-sm text-muted">
                   {a.kind === "dated"
                     ? formatDateRange(a.starts_on, a.ends_on, "ko")
-                    : formatWeekdays(a.weekdays, "ko") || "요일 상관없음"}
+                    : formatWeekdays(a.weekdays, "ko")}
                 </span>
                 <span className={`text-sm ${a.title_en ? "" : "text-salmon-strong"}`}>{a.title_en ?? "영문 제목 없음"}</span>
                 <VerifiedNote at={a.verified_at} by={a.verified_by ? (names.get(a.verified_by) ?? null) : null} method={a.verified_method} />
