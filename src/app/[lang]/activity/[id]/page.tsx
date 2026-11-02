@@ -6,6 +6,7 @@ import { Badge } from "@/components/Badge";
 import { FallbackNote } from "@/components/FallbackNote";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
+import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t } from "@/i18n";
 import { formatDateRange, formatWeekdays } from "@/lib/format";
@@ -100,8 +101,8 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
         lang={lang}
       />
 
-      {/* ▼ 팁 자리 — Task 5 가 채운다. 지금은 비워 둔다. */}
-      <section id="tips" data-slot="tips" aria-hidden="true" />
+      {/* 팁: 목록 + 쓰기 폼 (<section id="tips">) */}
+      <TipList lang={lang} targetType="activity" targetId={activity.id} />
     </article>
   );
 }

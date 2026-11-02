@@ -87,3 +87,16 @@ export async function listTips(targetType: PublicTip["target_type"], targetId: s
   if (error) fail("팁", error);
   return (data ?? []) as PublicTip[];
 }
+
+/** 팁을 달 대상이 공개 화면에 보이는 가게·할 거리인지 (샘플 규칙도 화면과 같게) */
+export async function tipTargetExists(targetType: PublicTip["target_type"], targetId: string): Promise<boolean> {
+  const view = targetType === "place" ? "places_public" : "activities_public";
+  const { data, error } = await anonClient()
+    .from(view)
+    .select("id")
+    .eq("id", targetId)
+    .in("is_sample", sampleValues())
+    .maybeSingle();
+  if (error) fail("팁 대상", error);
+  return data !== null;
+}

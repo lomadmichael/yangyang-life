@@ -8,6 +8,7 @@ import { HoursTable } from "@/components/HoursTable";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
 import { SafeImage } from "@/components/SafeImage";
+import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
 import { photoUrl } from "@/lib/format";
@@ -120,8 +121,8 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
 
       <VerifiedLine method={place.verified_method} at={place.verified_at} by={place.verified_by_name} lang={lang} />
 
-      {/* ▼ 팁 자리 — Task 5 가 「바뀌었어요·꿀팁·가는 법」 목록과 쓰기 폼을 여기에 채운다. 지금은 비워 둔다. */}
-      <section id="tips" data-slot="tips" aria-hidden="true" />
+      {/* 팁: 「바뀌었어요·꿀팁·가는 법」 목록 + 쓰기 폼 (<section id="tips">) */}
+      <TipList lang={lang} targetType="place" targetId={place.id} />
     </article>
   );
 }
