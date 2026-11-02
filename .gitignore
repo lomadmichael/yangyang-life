@@ -3,3 +3,11 @@ node_modules/
 .env*.local
 .superpowers/
 .vercel/
+/out/
+/build
+/coverage
+.DS_Store
+*.pem
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts

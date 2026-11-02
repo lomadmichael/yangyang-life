@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+ * 양양생활 색 토큰 — 화면을 만들 때는 아래 토큰(또는 Tailwind 의 bg-sea, text-ink 등)만 쓴다.
+ * 바다(sea)·모래(sand)·소나무(pine)·연어(salmon)에서 따온 팔레트.
+ */
+:root {
+  --sea: #0f5e8c;          /* 주 색: 버튼·링크 */
+  --sea-strong: #0a4669;   /* 주 색 눌림/호버 */
+  --sea-soft: #e6f1f8;     /* 주 색 옅은 바탕 */
+  --salmon: #e8735a;       /* 강조: 배지·포인트 */
+  --pine: #2f6b4f;         /* 보조: 자연·체험 */
+  --sand: #f7f3ec;         /* 페이지 바탕 */
+  --surface: #ffffff;      /* 카드 바탕 */
+  --ink: #1d2328;          /* 본문 글자 */
+  --muted: #5f6b75;        /* 보조 글자 */
+  --line: #e2ddd3;         /* 구분선 */
+}
+
+@theme inline {
+  --color-sea: var(--sea);
+  --color-sea-strong: var(--sea-strong);
+  --color-sea-soft: var(--sea-soft);
+  --color-salmon: var(--salmon);
+  --color-pine: var(--pine);
+  --color-sand: var(--sand);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: var(--font-noto-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+body {
+  background: var(--sand);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
