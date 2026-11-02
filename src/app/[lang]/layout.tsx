@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LangSwitch } from "@/components/LangSwitch";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -35,11 +36,13 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   return (
     <html lang={lang} className={`${notoSansKr.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <header className="flex items-center justify-between px-4 py-3">
-          <span className="font-bold text-sea">{t(lang, "siteName")}</span>
+        <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
+          <Link href={`/${lang}`} className="inline-flex min-h-11 items-center font-bold text-sea">
+            {t(lang, "siteName")}
+          </Link>
           <LangSwitch lang={lang} />
         </header>
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col">{children}</main>
         <SiteFooter lang={lang} />
       </body>
     </html>

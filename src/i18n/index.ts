@@ -33,6 +33,16 @@ export function t(lang: Lang, key: DictKey): string {
   return dictionaries[lang][key];
 }
 
+/** t() + 자리 채우기: tf("ko", "verifiedLine", { by: "김샘플", date: "2026. 10. 30." }) */
+export function tf(lang: Lang, key: DictKey, vars: Record<string, string>): string {
+  return t(lang, key).replace(/\{(\w+)\}/g, (whole, name: string) => vars[name] ?? whole);
+}
+
+/** 사전에 있는 키인지 — 알레르기 코드처럼 데이터에서 온 값을 표시 이름으로 바꿀 때 쓴다 */
+export function hasKey(key: string): key is DictKey {
+  return key in dictionaries.ko;
+}
+
 function nonEmpty(v: unknown): v is string {
   return typeof v === "string" && v.trim() !== "";
 }
