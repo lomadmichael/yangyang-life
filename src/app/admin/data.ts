@@ -1,4 +1,5 @@
 import "server-only";
+import { sampleOptions, showSamples } from "@/lib/samples";
 import { serviceClient } from "@/lib/supabase";
 import type { MenuItem, VerifiedMethod, WeeklyHours } from "@/lib/types";
 
@@ -135,8 +136,14 @@ export async function contributorNames(): Promise<Map<string, string>> {
   return new Map((rows as { id: string; display_name: string }[]).map((r) => [r.id, r.display_name]));
 }
 
-export async function placeOptions(): Promise<{ id: string; name_ko: string }[]> {
-  return must("가게", await serviceClient().from("places").select("id,name_ko").order("name_ko")) ?? [];
+/**
+ * 「연결할 가게」 고르기용. 운영(샘플 숨김)에서는 샘플 가게를 빼고,
+ * 미리보기에서는 이름 뒤에 「 (샘플)」을 붙인다. keepId(지금 연결된 가게)는 샘플이어도 남긴다.
+ */
+export async function placeOptions(keepId?: string | null): Promise<{ id: string; name_ko: string }[]> {
+  const rows: { id: string; name_ko: string; is_sample: boolean }[] =
+    must("가게", await serviceClient().from("places").select("id,name_ko,is_sample").order("name_ko")) ?? [];
+  return sampleOptions(rows, showSamples(), keepId);
 }
 
 export function isStale(verifiedAt: string | null, now: Date, days = 30): boolean {

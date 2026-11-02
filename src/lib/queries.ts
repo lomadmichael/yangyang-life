@@ -1,14 +1,10 @@
 import "server-only";
+import { sampleValues } from "./samples";
 import { anonClient } from "./supabase";
 import type { Activity, Contributor, MenuItem, Place, PublicTip } from "./types";
 
 // 공개 읽기 함수 — 전부 anon 키로 *_public 뷰만 읽는다.
 // YL_SHOW_SAMPLES === "1" 이 아니면 샘플(is_sample=true)은 빼고 돌려준다.
-
-/** .in("is_sample", sampleValues()) 로 쓴다 — 샘플 숨김이면 [false], 표시면 [false, true] */
-function sampleValues(): boolean[] {
-  return process.env.YL_SHOW_SAMPLES === "1" ? [false, true] : [false];
-}
 
 function fail(what: string, error: { message: string }): never {
   throw new Error(`${what} 조회 실패: ${error.message}`);

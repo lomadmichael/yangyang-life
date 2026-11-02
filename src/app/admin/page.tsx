@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sampleValues } from "@/lib/samples";
 import { serviceClient } from "@/lib/supabase";
 import { requireAdmin } from "./auth";
 import { Card, PageTitle, btnSecondary } from "./_components/ui";
@@ -11,10 +12,14 @@ export default async function AdminHome() {
   const now = new Date();
   const cutoff = new Date(now.getTime() - STALE_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+  // 운영(샘플 숨김)에서는 샘플 가게·할 거리를 개수에서 뺀다
+  const samples = sampleValues();
+
   const [stale, changed, places, activities] = await Promise.all([
     db
       .from("places")
       .select("id", { count: "exact", head: true })
+      .in("is_sample", samples)
       .neq("status", "closed")
       .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
     db
@@ -23,8 +28,8 @@ export default async function AdminHome() {
       .eq("kind", "changed")
       .is("handled_at", null)
       .eq("hidden", false),
-    db.from("places").select("id", { count: "exact", head: true }),
-    db.from("activities").select("id", { count: "exact", head: true }),
+    db.from("places").select("id", { count: "exact", head: true }).in("is_sample", samples),
+    db.from("activities").select("id", { count: "exact", head: true }).in("is_sample", samples),
   ]);
   for (const r of [stale, changed, places, activities]) if (r.error) throw new Error(r.error.message);
 

@@ -16,8 +16,9 @@ export default async function EditActivityPage({ params }: PageProps<"/admin/act
   const admin = await requireAdmin();
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [a, names, places] = await Promise.all([getActivityAdmin(id), contributorNames(), placeOptions()]);
+  const [a, names] = await Promise.all([getActivityAdmin(id), contributorNames()]);
   if (!a) notFound();
+  const places = await placeOptions(a.place_id); // 이미 연결된 샘플 가게는 운영에서도 목록에 남긴다
 
   return (
     <>
