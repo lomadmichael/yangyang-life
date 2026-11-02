@@ -107,3 +107,4 @@ if (updErr) die(`코드 저장 실패: ${updErr.message}`);
 console.log(`✓ ${person.display_name} (${person.role}${person.is_sample ? ", 샘플" : ""}) 의 개인 코드:`);
 console.log(`\n    ${formatAccessCode(code)}\n`);
 console.log("  이 코드는 다시 볼 수 없습니다. 본인에게만 전해 주세요. (잃어버리면 이 명령으로 재발급 → 이전 코드는 무효)");
+console.log("  ⚠ 로그인이 안 되면: 로컬 .env.local 과 Vercel 의 YL_CODE_PEPPER·YL_SESSION_SECRET 이 같은 값인지 확인하세요.");

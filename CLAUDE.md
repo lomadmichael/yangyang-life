@@ -35,7 +35,7 @@
 - 쓰기는 **서버 액션 안에서만**, 먼저 `authorize()`(`src/app/admin/auth.ts`; 페이지·라우트 핸들러는 같은 파일의 `requireAdmin`/`getAdmin`)와 `can()`(`src/lib/permissions.ts`)으로 권한을 검사한 뒤 `serviceClient()`로. 레이아웃의 로그인 검사만 믿지 않는다.
 - `src/lib/supabase.ts`, `session.ts`, `access-code.ts`는 서버 전용 — **클라이언트 컴포넌트(`"use client"`)에서 import 금지.** (`session.ts`·`access-code.ts`는 `server-only`가 없어 빌드가 막아 주지 않으니 특히 주의)
 - `.env.local`·키·개인 코드는 절대 커밋하지 않는다. 채팅·PR·이슈에도 붙이지 않는다. 새 환경변수는 `.env.example`에 이름만 추가.
-- **DB 스키마 변경은 `supabase/migrations/`에 새 번호 파일(0003_…)로만**, 소유자(이홍래) 검토 후 적용. 이미 적용된 마이그레이션 파일은 수정 금지. 참가자가 DB에 직접 SQL을 실행하지 않는다.
+- **DB 스키마 변경은 `supabase/migrations/`에 새 번호 파일(0003_…)로만**, 소유자(이홍래) 검토 후 적용. 이미 적용된 마이그레이션 파일은 수정 금지. 참가자가 DB에 직접 SQL을 실행하지 않는다. 공개 읽기 권한 모델은 `0002_views_only.sql`이 0001 맨 위 주석의 설계를 대체했다(`supabase/README.md`).
 - 관리자 개인 코드 발급(`scripts/issue-code.mjs`)·`scripts/setup-storage.mjs`는 소유자만 실행한다.
 
 ## 이 Next.js는 학습 데이터와 다르다
