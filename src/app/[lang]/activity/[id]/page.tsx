@@ -6,10 +6,11 @@ import { Badge } from "@/components/Badge";
 import { FallbackNote } from "@/components/FallbackNote";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
+import { SaveButton } from "@/components/SaveButton";
 import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
-import { isLang, pickText, t } from "@/i18n";
-import { formatDateRange, formatWeekdays } from "@/lib/format";
+import { isLang, pickText, t, tf } from "@/i18n";
+import { formatDateRange, formatWeekdays, seasonLabel } from "@/lib/format";
 import { listActivities, listPlaces } from "@/lib/queries";
 
 export default async function ActivityPage({ params }: PageProps<"/[lang]/activity/[id]">) {
@@ -30,11 +31,16 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
     activity.kind === "dated"
       ? formatDateRange(activity.starts_on, activity.ends_on, lang)
       : formatWeekdays(activity.weekdays, lang);
+  // 0003 적용 전 DB 에는 season_months 칸이 없을 수 있다. 비면(사계절) 줄을 그리지 않는다
+  const season = seasonLabel(activity.season_months ?? [], lang);
   const placeName = place ? pickText(place as unknown as Record<string, unknown>, "name", lang) : null;
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
-      <BackLink href={`/${lang}/play`} label={t(lang, "doTitle")} />
+      <div className="flex items-center justify-between gap-3">
+        <BackLink href={`/${lang}/play`} label={t(lang, "playTitle")} />
+        <SaveButton kind="activity" id={activity.id} lang={lang} size="md" />
+      </div>
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
@@ -53,6 +59,7 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
             <FallbackNote lang={lang} show={desc.fallback} />
           </p>
         ) : null}
+        {season ? <p className="text-sm font-medium text-ink">{tf(lang, "seasonLine", { months: season })}</p> : null}
       </header>
 
       <dl className="rounded-2xl border border-line bg-surface px-4">

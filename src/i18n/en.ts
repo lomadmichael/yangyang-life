@@ -85,7 +85,9 @@ export const en = {
   // What to do
   doTitle: "What to do today",
   doToday: "Today, {date}",
-  rainyToggle: "Rainy day",
+  playTitle: "Things to do",
+  playTodayLine: "Today in Yangyang, {date}",
+  rainyToggle: "Rainy-day OK",
   rainyOk: "Good when it rains",
   kindDated: "Event",
   kindAlways: "Any time",
@@ -94,7 +96,11 @@ export const en = {
   emptyActivitiesTitle: "Nothing listed for today yet",
   emptyActivitiesBody: "We are adding more soon. Meanwhile, see where to eat.",
   emptyRainyTitle: "No rainy-day spots yet",
-  emptyRainyBody: "Turn off “Rainy day” to see everything for today.",
+  emptyRainyBody: "Turn off “Rainy-day OK” to see everything for today.",
+  offSeasonTitle: "Out of season now",
+  offSeasonCount: "{n} listed",
+  seasonLine: "Season: {months}",
+  guideBy: "By {name}",
 
   // Detail pages
   address: "Address",

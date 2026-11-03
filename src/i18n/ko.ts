@@ -84,7 +84,9 @@ export const ko = {
   // 오늘 뭐하지
   doTitle: "오늘 뭐하지",
   doToday: "오늘 {date}",
-  rainyToggle: "비 오는 날",
+  playTitle: "놀거리",
+  playTodayLine: "오늘 양양, {date}",
+  rainyToggle: "비 오는 날 OK",
   rainyOk: "비 와도 좋아요",
   kindDated: "기간 행사",
   kindAlways: "언제든",
@@ -93,7 +95,11 @@ export const ko = {
   emptyActivitiesTitle: "오늘 소개할 거리가 아직 없어요",
   emptyActivitiesBody: "곧 채워 넣을게요. 「오늘 뭐 먹지」도 둘러보세요.",
   emptyRainyTitle: "비 오는 날 갈 곳이 아직 없어요",
-  emptyRainyBody: "「비 오는 날」을 끄면 오늘 할 거리를 모두 볼 수 있어요.",
+  emptyRainyBody: "「비 오는 날 OK」를 끄면 오늘 할 거리를 모두 볼 수 있어요.",
+  offSeasonTitle: "지금은 비시즌",
+  offSeasonCount: "{n}개",
+  seasonLine: "운영 {months}",
+  guideBy: "글: {name}",
 
   // 상세 공통
   address: "주소",
