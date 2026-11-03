@@ -147,3 +147,17 @@ describe("isTipTarget", () => {
     expect(isTipTarget(undefined)).toBe(false);
   });
 });
+
+describe("validateTip (대상 종류 — 이야기 팁)", () => {
+  it("이야기(story) 대상은 통과", () => {
+    expect(validateTip({ target_type: "story", kind: "tip", body: "비 오는 날엔 순서를 바꿔도 좋아요", nickname: "여행자" })).toEqual({
+      ok: true,
+    });
+  });
+  it("모르는 대상(menu)은 거절", () => {
+    expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      validateTip({ target_type: "menu", kind: "tip", body: "메뉴가 바뀌었어요", nickname: "여행자" } as any),
+    ).toEqual({ ok: false, reason: "target" });
+  });
+});

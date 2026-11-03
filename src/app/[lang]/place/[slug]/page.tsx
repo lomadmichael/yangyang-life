@@ -11,17 +11,15 @@ import { MapLinks } from "@/components/MapLinks";
 import { isAmenityCategory } from "@/components/PlaceCard";
 import { SaveButton } from "@/components/SaveButton";
 import { SafeImage } from "@/components/SafeImage";
+import { StoryCard } from "@/components/StoryCard";
 import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
 import { photoUrl } from "@/lib/format";
 import { isOpenNow } from "@/lib/hours";
-import { AMENITY_KEY, CATEGORY_KEY, PRICE_KEY, STORY_TYPE_KEY, priceSymbol } from "@/lib/labels";
+import { AMENITY_KEY, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
 import { getPlaceBySlug, listActivities, listStoriesMentioning } from "@/lib/queries";
-import type { Activity, Story, StoryType } from "@/lib/types";
-
-/** 이야기 갈래 배지 색 (디자인 인계 2-5: 코스 salmon · 사람 pine · 가이드 sea) */
-const STORY_TONE: Record<StoryType, "partner" | "open" | "info"> = { course: "partner", people: "open", guide: "info" };
+import type { Activity, Story } from "@/lib/types";
 
 // 아래 두 묶음은 곁가지 — 조회가 실패해도(예: 0003 적용 전 stories_public 없음) 상세 화면은 그대로 보여 준다
 async function storiesFor(placeId: string): Promise<Story[]> {
@@ -164,29 +162,11 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
         <section className="flex flex-col gap-3">
           <h2 className="font-bold">{t(lang, "placeStoriesTitle")}</h2>
           <ul className="flex flex-col gap-2">
-            {stories.map((s) => {
-              const title = pickText(s as unknown as Record<string, unknown>, "title", lang);
-              const by = [s.author_name, s.author_team].filter(Boolean).join(" · ");
-              return (
-                <li key={s.id}>
-                  <Link
-                    href={`/${lang}/stories/${s.slug}`}
-                    className="flex min-h-11 flex-col gap-1 rounded-2xl border border-line bg-surface px-4 py-3 active:bg-sea-soft"
-                  >
-                    <span>
-                      <Badge tone={STORY_TONE[s.type] ?? "muted"}>
-                        {STORY_TYPE_KEY[s.type] ? t(lang, STORY_TYPE_KEY[s.type]) : s.type}
-                      </Badge>
-                    </span>
-                    <span className="font-bold leading-snug">
-                      {title.text}
-                      <FallbackNote lang={lang} show={title.fallback} />
-                    </span>
-                    {by ? <span className="text-sm text-muted">{tf(lang, "storyByline", { name: by })}</span> : null}
-                  </Link>
-                </li>
-              );
-            })}
+            {stories.map((s) => (
+              <li key={s.id}>
+                <StoryCard story={s} lang={lang} size="sm" />
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}

@@ -22,9 +22,11 @@ export const POST_DAY_LIMIT = 10;
 /** 서로 다른 기기 신고가 이만큼 모이면 자동 숨김 */
 export const REPORT_HIDE_AT = 3;
 
-export type TipRejectReason = "length" | "link" | "phone" | "kind" | "nickname";
+export type TipRejectReason = "target" | "length" | "link" | "phone" | "kind" | "nickname";
 
 export interface TipInput {
+  /** 대상 종류 — 주면 TIP_TARGETS 안인지 본다(서버 액션은 항상 준다) */
+  target_type?: TipTarget;
   kind: TipKind;
   body: string;
   nickname: string;
@@ -70,8 +72,9 @@ export function hasPhone(text: string): boolean {
   return PHONE_RE.test(s) || REP_PHONE_RE.test(s);
 }
 
-/** 검사 순서: 종류 → 닉네임 → 길이 → 링크 → 전화 */
+/** 검사 순서: 대상 → 종류 → 닉네임 → 길이 → 링크 → 전화 */
 export function validateTip(input: TipInput): { ok: true } | { ok: false; reason: TipRejectReason } {
+  if (input.target_type !== undefined && !isTipTarget(input.target_type)) return { ok: false, reason: "target" };
   if (!isTipKind(input.kind)) return { ok: false, reason: "kind" };
   const nickname = typeof input.nickname === "string" ? input.nickname.trim() : "";
   if (nickname.length < 1 || nickname.length > NICKNAME_MAX) return { ok: false, reason: "nickname" };

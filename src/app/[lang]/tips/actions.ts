@@ -24,6 +24,7 @@ const ONE_YEAR_S = 60 * 60 * 24 * 365;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const REASON_KEY: Record<TipRejectReason, DictKey> = {
+  target: "tipErrTarget",
   length: "tipErrLength",
   link: "tipErrLink",
   phone: "tipErrPhone",
@@ -69,7 +70,7 @@ export async function submitTip(formData: FormData): Promise<{ ok: boolean; mess
   const kind = str(formData.get("kind"));
   const body = str(formData.get("body"));
   const nickname = str(formData.get("nickname"));
-  const checked = validateTip({ kind: kind as never, body, nickname });
+  const checked = validateTip({ target_type: targetType, kind: kind as never, body, nickname });
   if (!checked.ok) return say(false, REASON_KEY[checked.reason]);
   if (!isTipKind(kind)) return say(false, "tipErrKind"); // 위에서 걸러지지만 타입 좁히기용
 

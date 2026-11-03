@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseStoryBlocks, resolveStops, stopTargets, storyNeedsCheck } from "../src/lib/story-blocks";
+import { parseStoryBlocks, resolveStops, savablePlaceIds, stopTargets, stopView, storyNeedsCheck } from "../src/lib/story-blocks";
 import type { Activity, Place, StoryBlock } from "../src/lib/types";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
@@ -146,5 +146,47 @@ describe("들른 곳", () => {
   it("stopTargets: 중복 제거", () => {
     const b3 = [...blocks, stop({ place_id: A.id }), stop({ activity_id: UUID4 })];
     expect(stopTargets(b3)).toEqual({ placeIds: [UUID, UUID2, UUID3], activityIds: [UUID4] });
+  });
+});
+
+describe("들른 곳 카드 표시 (stopView) — 휴업·사라짐", () => {
+  // 2026-11-14(토) 12:00 서울
+  const NOON_SAT = new Date("2026-11-14T03:00:00Z");
+  const OPEN = place({ id: UUID, slug: "open-shop", status: "listed", hours: { sat: [["10:00", "20:00"]] } });
+  const SHUT = place({ id: UUID2, slug: "shut-shop", status: "listed", hours: { sat: [["18:00", "22:00"]] } });
+  const CLOSED = place({ id: UUID3, slug: "closed-shop", status: "closed", hours: { sat: [["10:00", "20:00"]] } });
+  const BEACH = place({ id: UUID4, slug: "beach", category: "spot", status: "listed", hours: {} });
+  const X = act({ id: "55555555-5555-4555-8555-555555555555" });
+  const GONE = "66666666-6666-4666-8666-666666666666";
+  const blocks: StoryBlock[] = [
+    stop({ place_id: OPEN.id }),
+    stop({ place_id: SHUT.id }),
+    stop({ place_id: CLOSED.id }),
+    stop({ place_id: BEACH.id }),
+    stop({ activity_id: X.id }),
+    stop({ place_id: GONE }),
+    stop({ activity_id: GONE }),
+    stop({ place_id: OPEN.id }),
+  ];
+  const places = new Map([OPEN, SHUT, CLOSED, BEACH].map((p) => [p.id, p]));
+  const r = resolveStops(blocks, places, new Map([[X.id, X]]));
+
+  it("상태별 배지·안내 문구·링크", () => {
+    expect(r.map((s) => stopView(s, NOON_SAT))).toEqual([
+      { kind: "place", id: OPEN.id, href: "/place/open-shop", badge: "open", notice: null },
+      { kind: "place", id: SHUT.id, href: "/place/shut-shop", badge: "closedNow", notice: null },
+      { kind: "place", id: CLOSED.id, href: "/place/closed-shop", badge: "closed", notice: "stopClosedNote" },
+      // 해변·생활 편의는 영업시간이 뜻이 없다 → 닫힘 배지 없음
+      { kind: "place", id: BEACH.id, href: "/place/beach", badge: null, notice: null },
+      { kind: "activity", id: X.id, href: `/activity/${X.id}`, badge: null, notice: null },
+      // 지워졌거나 운영에서 숨겨진 곳: 링크·★ 없음
+      { kind: null, id: null, href: null, badge: null, notice: "stopMissingNote" },
+      { kind: null, id: null, href: null, badge: null, notice: "stopMissingNote" },
+      { kind: "place", id: OPEN.id, href: "/place/open-shop", badge: "open", notice: null },
+    ]);
+  });
+  it("「모두 저장」은 안내 중·휴업 장소만, 중복 없이 순서대로", () => {
+    expect(savablePlaceIds(r)).toEqual([OPEN.id, SHUT.id, CLOSED.id, BEACH.id]);
+    expect(savablePlaceIds([])).toEqual([]);
   });
 });

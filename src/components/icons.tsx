@@ -89,3 +89,14 @@ export function IconStarFilled({ className }: IconProps) {
     </Svg>
   );
 }
+
+/** 경고 — 「확인한 지 오래된 가이드」 띠 */
+export function IconAlert({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M10.3 4.2 2.9 17.5A2 2 0 0 0 4.65 20.5h14.7a2 2 0 0 0 1.75-3L13.7 4.2a1.95 1.95 0 0 0-3.4 0Z" />
+      <path d="M12 9.5v4.25" />
+      <path d="M12 17.25h.01" />
+    </Svg>
+  );
+}

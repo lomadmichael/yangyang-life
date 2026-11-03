@@ -1,4 +1,5 @@
 import { isUuid, type Parsed } from "./admin-input";
+import { isOpenNow } from "./hours";
 import type { Activity, Place, StoryBlock } from "./types";
 
 // 이야기 본문 블록 — 입력 검사, 들른 곳(stop) 대상 모으기·현재 값으로 풀기.
@@ -147,4 +148,44 @@ export function storyNeedsCheck(
   activities: Map<string, Activity>,
 ): boolean {
   return resolveStops(blocks, places, activities).some((s) => s.state !== "ok");
+}
+
+/** 들른 곳 카드 한 장에 그릴 것 — 상태(ok·closed·missing)에 따라 링크·배지·안내 문구를 고른다 */
+export interface StopView {
+  /** ★ 저장·링크 대상 종류. missing 이면 null */
+  kind: "place" | "activity" | null;
+  id: string | null;
+  /** 언어 앞마디를 뺀 주소 (/place/{slug} · /activity/{id}). missing 이면 링크 없음 */
+  href: string | null;
+  /** 장소 영업 배지 — open 영업 중 · closedNow 지금은 닫힘 · closed 휴업 */
+  badge: "open" | "closedNow" | "closed" | null;
+  /** 카드 안내 줄의 사전 키 */
+  notice: "stopClosedNote" | "stopMissingNote" | null;
+}
+
+/** 해변·명소·생활 편의는 영업시간이 뜻이 없다(PlaceCard 와 같은 기준) → 「지금은 닫힘」을 붙이지 않는다 */
+function hoursMatter(category: Place["category"]): boolean {
+  return category !== "spot" && category !== "life";
+}
+
+export function stopView(s: ResolvedStop, now: Date): StopView {
+  if (s.state === "missing") return { kind: null, id: null, href: null, badge: null, notice: "stopMissingNote" };
+  if (s.place) {
+    const p = s.place;
+    const href = `/place/${p.slug}`;
+    if (s.state === "closed") return { kind: "place", id: p.id, href, badge: "closed", notice: "stopClosedNote" };
+    const badge = isOpenNow(p.hours ?? {}, p.status, now) ? "open" : hoursMatter(p.category) ? "closedNow" : null;
+    return { kind: "place", id: p.id, href, badge, notice: null };
+  }
+  const a = s.activity as Activity;
+  return { kind: "activity", id: a.id, href: `/activity/${a.id}`, badge: null, notice: null };
+}
+
+/** 「이 코스의 장소 모두 저장」 대상 — 안내 중(ok)·휴업(closed) 장소 id, 중복 없이 나온 순서대로. 놀거리·사라진 곳은 뺀다 */
+export function savablePlaceIds(resolved: ResolvedStop[]): string[] {
+  const ids = new Set<string>();
+  for (const s of resolved) {
+    if (s.state !== "missing" && s.place) ids.add(s.place.id);
+  }
+  return [...ids];
 }
