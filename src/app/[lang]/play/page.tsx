@@ -9,7 +9,7 @@ import { formatToday } from "@/lib/format";
 import { listActivities } from "@/lib/queries";
 import { activitiesForDay } from "@/lib/today";
 
-export default async function DoPage({ params, searchParams }: PageProps<"/[lang]/do">) {
+export default async function DoPage({ params, searchParams }: PageProps<"/[lang]/play">) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   await connection(); // 「오늘」은 요청 시각 기준
@@ -20,7 +20,7 @@ export default async function DoPage({ params, searchParams }: PageProps<"/[lang
   const list = activitiesForDay(await listActivities(), now, { rainy });
   const dated = list.filter((a) => a.kind === "dated");
   const always = list.filter((a) => a.kind === "always");
-  const base = `/${lang}/do`;
+  const base = `/${lang}/play`;
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-10">
@@ -44,7 +44,7 @@ export default async function DoPage({ params, searchParams }: PageProps<"/[lang
           <EmptyState
             title={t(lang, "emptyActivitiesTitle")}
             body={t(lang, "emptyActivitiesBody")}
-            action={{ href: `/${lang}/eat`, label: t(lang, "homeWhereToEat") }}
+            action={{ href: `/${lang}/places`, label: t(lang, "homeWhereToEat") }}
           />
         )
       ) : (

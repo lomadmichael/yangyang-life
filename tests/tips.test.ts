@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canPost, validateTip } from "../src/lib/tips";
+import { canPost, isTipTarget, validateTip } from "../src/lib/tips";
 
 describe("validateTip (brief)", () => {
   it("accepts a normal tip", () => {
@@ -137,5 +137,13 @@ describe("canPost", () => {
     expect(canPost(ten, new Date(base + 10 * 3600_000))).toBe(false);
     expect(canPost(ten.slice(0, 9), new Date(base + 10 * 3600_000))).toBe(true);
     expect(canPost(ten, new Date(base + 24 * 3600_000 + 1))).toBe(true); // 첫 건이 24시간 밖으로
+  });
+});
+
+describe("isTipTarget", () => {
+  it("가게·놀거리·이야기만", () => {
+    expect(["place", "activity", "story"].every(isTipTarget)).toBe(true);
+    expect(isTipTarget("tip")).toBe(false);
+    expect(isTipTarget(undefined)).toBe(false);
   });
 });

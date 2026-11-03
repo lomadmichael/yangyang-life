@@ -11,14 +11,14 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
     <div className="flex flex-1 flex-col gap-4 px-4 pb-10 pt-6">
       <h1 className="text-2xl font-bold leading-snug">{t(lang, "siteTagline")}</h1>
       <Link
-        href={`/${lang}/do`}
+        href={`/${lang}/play`}
         className="flex min-h-28 flex-col justify-center rounded-3xl bg-sea px-6 py-5 text-on-sea active:bg-sea-strong"
       >
         <span className="text-2xl font-bold">{t(lang, "homeWhatToDo")}</span>
         <span className="mt-1 text-sm opacity-90">{t(lang, "homeWhatToDoSub")}</span>
       </Link>
       <Link
-        href={`/${lang}/eat`}
+        href={`/${lang}/places`}
         className="flex min-h-28 flex-col justify-center rounded-3xl bg-salmon-strong px-6 py-5 text-on-sea"
       >
         <span className="text-2xl font-bold">{t(lang, "homeWhereToEat")}</span>

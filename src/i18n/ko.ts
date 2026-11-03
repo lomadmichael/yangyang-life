@@ -16,6 +16,14 @@ export const ko = {
   backHome: "처음으로",
   back: "뒤로",
 
+  // 하단 메뉴
+  navLabel: "주 메뉴",
+  navHome: "홈",
+  navPlaces: "장소",
+  navPlay: "놀거리",
+  navStories: "이야기",
+  navMy: "MY",
+
   // 오늘 뭐 먹지
   eatTitle: "오늘 뭐 먹지",
   filterLabel: "목록 거르기",

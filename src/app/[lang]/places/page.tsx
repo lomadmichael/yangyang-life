@@ -10,7 +10,7 @@ import { CATEGORIES, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
 import { filterPlaces, type PlaceFilter } from "@/lib/places-filter";
 import { listPlaces } from "@/lib/queries";
 
-export default async function EatPage({ params, searchParams }: PageProps<"/[lang]/eat">) {
+export default async function EatPage({ params, searchParams }: PageProps<"/[lang]/places">) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   await connection(); // 「지금 영업 중」은 요청 시각 기준
@@ -18,7 +18,7 @@ export default async function EatPage({ params, searchParams }: PageProps<"/[lan
   const f = parsePlacesQuery(await searchParams);
   const now = new Date();
   const places = filterPlaces(await listPlaces(), f, now);
-  const base = `/${lang}/eat`;
+  const base = `/${lang}/places`;
   const href = (next: PlaceFilter) => `${base}${placesQueryString(next)}`;
 
   const categoryChips: Chip[] = [

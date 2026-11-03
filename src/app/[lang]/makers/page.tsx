@@ -56,7 +56,7 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
         <h2 className="text-lg font-bold text-sea">{t(lang, "makersJoinTitle")}</h2>
         <p className="mt-1 text-sm">{t(lang, "makersJoinBody")}</p>
         <Link
-          href={`/${lang}/eat`}
+          href={`/${lang}/places`}
           className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea"
         >
           {t(lang, "makersJoinAction")}

@@ -34,7 +34,7 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
-      <BackLink href={`/${lang}/do`} label={t(lang, "doTitle")} />
+      <BackLink href={`/${lang}/play`} label={t(lang, "doTitle")} />
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">

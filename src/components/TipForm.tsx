@@ -21,7 +21,7 @@ export function TipForm({
   targetId,
 }: {
   lang: Lang;
-  targetType: "place" | "activity";
+  targetType: "place" | "activity" | "story";
   targetId: string;
 }) {
   const [open, setOpen] = useState(false);

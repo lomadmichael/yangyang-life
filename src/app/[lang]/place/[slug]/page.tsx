@@ -41,7 +41,7 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
-      <BackLink href={`/${lang}/eat`} label={t(lang, "eatTitle")} />
+      <BackLink href={`/${lang}/places`} label={t(lang, "eatTitle")} />
 
       {photos.length > 0 ? (
         <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 empty:hidden">

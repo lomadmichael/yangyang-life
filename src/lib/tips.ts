@@ -3,6 +3,14 @@
 export const TIP_KINDS = ["changed", "tip", "directions"] as const;
 export type TipKind = (typeof TIP_KINDS)[number];
 
+/** 팁을 달 수 있는 대상 — 가게·놀거리·이야기 */
+export const TIP_TARGETS = ["place", "activity", "story"] as const;
+export type TipTarget = (typeof TIP_TARGETS)[number];
+
+export function isTipTarget(v: unknown): v is TipTarget {
+  return typeof v === "string" && (TIP_TARGETS as readonly string[]).includes(v);
+}
+
 export const NICKNAME_MAX = 20;
 export const BODY_MIN = 2;
 export const BODY_MAX = 500;

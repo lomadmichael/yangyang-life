@@ -12,6 +12,7 @@ import {
   REPORT_HIDE_AT,
   canPost,
   isTipKind,
+  isTipTarget,
   validateTip,
   type TipRejectReason,
 } from "@/lib/tips";
@@ -33,6 +34,7 @@ const REASON_KEY: Record<TipRejectReason, DictKey> = {
 const DETAIL_ROUTE = {
   place: "/[lang]/place/[slug]",
   activity: "/[lang]/activity/[id]",
+  story: "/[lang]/stories/[slug]",
 } as const;
 
 /** 기기 식별 쿠키 — 없거나 이상하면 새로 발급(1년) */
@@ -62,7 +64,7 @@ export async function submitTip(formData: FormData): Promise<{ ok: boolean; mess
 
   const targetType = str(formData.get("target_type"));
   const targetId = str(formData.get("target_id"));
-  if ((targetType !== "place" && targetType !== "activity") || !UUID_RE.test(targetId)) return say(false, "tipErrTarget");
+  if (!isTipTarget(targetType) || !UUID_RE.test(targetId)) return say(false, "tipErrTarget");
 
   const kind = str(formData.get("kind"));
   const body = str(formData.get("body"));
@@ -145,7 +147,7 @@ export async function reportTip(tipId: string): Promise<{ ok: boolean }> {
       .eq("id", tipId);
     if (updErr) throw updErr;
 
-    if (hide) revalidatePath(DETAIL_ROUTE[tip.target_type as "place" | "activity"], "page");
+    if (hide) revalidatePath(DETAIL_ROUTE[tip.target_type as keyof typeof DETAIL_ROUTE], "page");
     return { ok: true };
   } catch (e) {
     console.error("[reportTip]", e instanceof Error ? e.message : e);

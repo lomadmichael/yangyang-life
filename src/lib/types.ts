@@ -138,7 +138,7 @@ export interface Contributor {
 
 export interface PublicTip {
   id: string;
-  target_type: "place" | "activity";
+  target_type: "place" | "activity" | "story";
   target_id: string;
   kind: "changed" | "tip" | "directions";
   body: string;

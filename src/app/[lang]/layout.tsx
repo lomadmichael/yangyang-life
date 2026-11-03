@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BottomNav } from "@/components/BottomNav";
 import { LangSwitch } from "@/components/LangSwitch";
 import { SiteFooter } from "@/components/SiteFooter";
 import { LANGS, isLang, t } from "@/i18n";
@@ -44,6 +45,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
         </header>
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col">{children}</main>
         <SiteFooter lang={lang} />
+        <BottomNav lang={lang} />
       </body>
     </html>
   );

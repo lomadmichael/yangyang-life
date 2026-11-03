@@ -17,6 +17,14 @@ export const en = {
   backHome: "Home",
   back: "Back",
 
+  // 하단 메뉴
+  navLabel: "Main menu",
+  navHome: "Home",
+  navPlaces: "Places",
+  navPlay: "Play",
+  navStories: "Stories",
+  navMy: "My",
+
   // Where to eat
   eatTitle: "Where to eat",
   filterLabel: "Filter the list",
