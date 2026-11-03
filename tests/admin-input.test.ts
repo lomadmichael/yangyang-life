@@ -6,6 +6,7 @@ import {
   parseHours,
   parseMenuInput,
   parsePlaceInput,
+  parseStoryInput,
   suggestSlug,
 } from "../src/lib/admin-input";
 
@@ -140,5 +141,110 @@ describe("parseActivityInput", () => {
     expect(r.ok && r.value.season_months).toEqual([4, 10]);
     const all = parseActivityInput(valid);
     expect(all.ok && all.value).toMatchObject({ category: "yoga", season_months: [] });
+  });
+});
+
+// ── 이야기 입력 (Task 10) ─────────────────────────────
+
+const STOP_PLACE = "11111111-1111-4111-8111-111111111111";
+
+const validStory = {
+  type: "course",
+  guide_topic: null,
+  slug: "rainy-day-hyeonnam",
+  title_ko: "비 오는 날 현남 하루",
+  title_en: "",
+  summary_ko: "차 없이 걸어서",
+  summary_en: "",
+  cover_photo: "",
+  visited_on: "2026-11-07",
+  tags: ["rainy", "nocar"],
+  blocks: [
+    { key: "b1", t: "text", ko: "아침에 바다를 걸었어요.", en: "" },
+    { key: "b2", t: "stop", place_id: STOP_PLACE, activity_id: "", time_ko: "10:00", time_en: "", note_ko: "", note_en: "" },
+  ],
+  // 아래는 클라이언트가 보내도 무시돼야 하는 칸
+  author_id: "99999999-9999-4999-8999-999999999999",
+  status: "published",
+  is_sample: true,
+  published_at: "2026-01-01T00:00:00Z",
+  verified_at: "2026-01-01T00:00:00Z",
+  review_note: "몰래",
+};
+
+describe("parseStoryInput", () => {
+  it("가이드는 주제 필수 (plan)", () => {
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: null }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "course", guide_topic: "surf" }).ok).toBe(false);
+  });
+
+  it("정상 입력 → 정돈된 행. 작성자·상태·샘플·공개일·메모는 받지 않는다", () => {
+    const r = parseStoryInput(validStory);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toEqual({
+      type: "course",
+      guide_topic: null,
+      slug: "rainy-day-hyeonnam",
+      title_ko: "비 오는 날 현남 하루",
+      title_en: null,
+      summary_ko: "차 없이 걸어서",
+      summary_en: null,
+      cover_photo: null,
+      visited_on: "2026-11-07",
+      tags: ["nocar", "rainy"],
+      blocks: [
+        { t: "text", ko: "아침에 바다를 걸었어요.", en: null },
+        { t: "stop", place_id: STOP_PLACE, activity_id: null, time_ko: "10:00", time_en: null, note_ko: null, note_en: null },
+      ],
+    });
+    for (const k of ["author_id", "status", "is_sample", "published_at", "verified_at", "review_note"]) {
+      expect(Object.prototype.hasOwnProperty.call(r.value, k)).toBe(false);
+    }
+  });
+
+  it("가이드 주제는 놀거리·장소 분류 키만", () => {
+    const g = parseStoryInput({ ...validStory, type: "guide", guide_topic: "surf" });
+    expect(g.ok && g.value.guide_topic).toBe("surf");
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "spot" }).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "casino" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "news" }).ok).toBe(false);
+  });
+
+  it("제목 1~80자, 요약 140자까지", () => {
+    expect(parseStoryInput({ ...validStory, title_ko: "  " }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(80) }).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(81) }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, title_en: "a".repeat(81) }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(140) }).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(141) }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, summary_en: "a".repeat(141) }).ok).toBe(false);
+  });
+
+  it("slug: 장소와 같은 규칙. 비우면 영문 제목에서 제안, 그것도 없으면 null(서버가 채움)", () => {
+    expect(parseStoryInput({ ...validStory, slug: "Bad Slug" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, slug: "a".repeat(61) }).ok).toBe(false);
+    const fromEn = parseStoryInput({ ...validStory, slug: "", title_en: "A Rainy Day in Hyeonnam" });
+    expect(fromEn.ok && fromEn.value.slug).toBe("a-rainy-day-in-hyeonnam");
+    const none = parseStoryInput({ ...validStory, slug: "" });
+    expect(none.ok && none.value.slug).toBe(null);
+  });
+
+  it("태그는 5종만, 다녀온 날은 실제 날짜, 대표 사진은 https", () => {
+    expect(parseStoryInput({ ...validStory, tags: ["solo", "vip"] }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, tags: "solo" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, visited_on: "2026-02-30" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, visited_on: "" }).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, cover_photo: "http://x.test/a.jpg" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, cover_photo: "javascript:alert(1)" }).ok).toBe(false);
+    const c = parseStoryInput({ ...validStory, cover_photo: "https://x.test/a.jpg" });
+    expect(c.ok && c.value.cover_photo).toBe("https://x.test/a.jpg");
+  });
+
+  it("본문은 parseStoryBlocks 규칙 그대로", () => {
+    expect(parseStoryInput({ ...validStory, blocks: [{ t: "stop", place_id: STOP_PLACE, activity_id: STOP_PLACE }] }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: [{ t: "photo", url: "" }] }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: "x" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: [] }).ok).toBe(true);
   });
 });

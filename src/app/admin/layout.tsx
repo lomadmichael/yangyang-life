@@ -21,6 +21,7 @@ const NAV = [
   { href: "/admin", label: "홈" },
   { href: "/admin/places", label: "가게" },
   { href: "/admin/activities", label: "할 거리" },
+  { href: "/admin/stories", label: "이야기" },
   { href: "/admin/tips", label: "팁함" },
 ] as const;
 
@@ -56,6 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <nav className="mx-auto flex w-full max-w-2xl gap-1 overflow-x-auto px-2 pb-1" aria-label="관리 메뉴">
               {[
                 ...NAV,
+                ...(can(admin.role, "publish_story") ? [{ href: "/admin/review", label: "검토" }] : []),
                 ...(can(admin.role, "publish_story") ? [{ href: "/admin/stale", label: "재확인" }] : []),
                 ...(can(admin.role, "manage_contributors") ? [{ href: "/admin/contributors", label: "기여자" }] : []),
               ].map(

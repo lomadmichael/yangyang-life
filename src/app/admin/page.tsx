@@ -4,6 +4,7 @@ import { sampleValues } from "@/lib/samples";
 import { STALE_DAYS } from "@/lib/stale";
 import { serviceClient } from "@/lib/supabase";
 import { requireAdmin } from "./auth";
+import { countStoriesAdmin } from "./data";
 import { Card, PageTitle, btnSecondary } from "./_components/ui";
 
 export default async function AdminHome() {
@@ -38,6 +39,13 @@ export default async function AdminHome() {
   ]);
   for (const r of [stale, staleActivities, changed, places, activities]) if (r.error) throw new Error(r.error.message);
 
+  // 이야기 카드: 검토 대기(편집 이상) · 돌려받은 내 이야기(누구나 — 자기 글)
+  const reviewer = can(admin.role, "publish_story");
+  const [waiting, returnedMine] = await Promise.all([
+    reviewer ? countStoriesAdmin({ status: "review" }) : Promise.resolve(0),
+    countStoriesAdmin({ status: "returned", authorId: admin.id }),
+  ]);
+
   return (
     <>
       <PageTitle>안녕하세요, {admin.display_name} 님</PageTitle>
@@ -57,6 +65,23 @@ export default async function AdminHome() {
           <p className="mt-1 text-3xl font-bold tabular-nums text-sea">{changed.count ?? 0}</p>
           <p className="mt-1 text-xs text-muted">처리 전 · 숨김 제외</p>
         </Link>
+        {reviewer ? (
+          <Link href="/admin/review" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
+            <p className="text-sm text-muted">검토 대기 이야기</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums text-sea">{waiting}</p>
+            <p className="mt-1 text-xs text-muted">열어서 공개·돌려보내기</p>
+          </Link>
+        ) : null}
+        {!reviewer || returnedMine > 0 ? (
+          <Link
+            href="/admin/stories"
+            className={`rounded-xl border bg-surface p-4 hover:border-sea ${returnedMine > 0 ? "border-salmon" : "border-line"}`}
+          >
+            <p className="text-sm text-muted">돌려받은 내 이야기</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{returnedMine}</p>
+            <p className="mt-1 text-xs text-muted">편집 메모를 보고 고쳐 주세요</p>
+          </Link>
+        ) : null}
       </div>
       {can(admin.role, "publish_story") ? (
         <Link href="/admin/stale" className="rounded-xl border border-line bg-surface p-4 font-medium text-sea hover:border-sea">
@@ -70,6 +95,12 @@ export default async function AdminHome() {
           </Link>
           <Link href="/admin/activities/new" className={btnSecondary}>
             + 할 거리 추가
+          </Link>
+          <Link href="/admin/stories/new" className={btnSecondary}>
+            + 이야기 쓰기
+          </Link>
+          <Link href="/admin/stories" className={btnSecondary}>
+            내 이야기
           </Link>
           <Link href="/admin/places" className={btnSecondary}>
             가게 {places.count ?? 0}곳

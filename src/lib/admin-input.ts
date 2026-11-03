@@ -1,6 +1,19 @@
 import { ko } from "../i18n/ko";
-import { AMENITIES, PLAY_CATEGORIES } from "./labels";
-import type { Activity, Amenity, MenuItem, Place, PlayCategory, VerifiedMethod, Weekday, WeeklyHours } from "./types";
+import { AMENITIES, CATEGORIES, PLAY_CATEGORIES, STORY_TAGS, STORY_TYPES } from "./labels";
+import { parseStoryBlocks } from "./story-blocks";
+import type {
+  Activity,
+  Amenity,
+  MenuItem,
+  Place,
+  PlayCategory,
+  Story,
+  StoryTag,
+  StoryType,
+  VerifiedMethod,
+  Weekday,
+  WeeklyHours,
+} from "./types";
 
 // 관리 화면 입력 검사 — 브라우저가 보낸 값은 전부 여기서 다시 확인해 DB 행으로 바꾼다.
 // 클라이언트가 보낸 code·created_by·verified_*·is_sample 은 절대 받지 않는다(서버 액션이 따로 채움).
@@ -308,4 +321,128 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
 
 export function isVerifiedMethod(v: unknown): v is VerifiedMethod {
   return typeof v === "string" && Object.prototype.hasOwnProperty.call(METHOD_KO, v);
+}
+
+// ───────────────────────── 이야기 ─────────────────────────
+
+/** 가이드 주제 = 놀거리 분류 → 장소 분류 순(겹치는 surf 는 한 번) */
+export const GUIDE_TOPICS: string[] = [...new Set<string>([...PLAY_CATEGORIES, ...CATEGORIES])];
+export const STORY_TYPE_KO: Record<StoryType, string> = { course: "코스", people: "사람", guide: "가이드" };
+export const STORY_TAG_KO: Record<StoryTag, string> = {
+  solo: "혼자",
+  couple: "커플",
+  family: "가족",
+  nocar: "차 없이",
+  rainy: "비 오는 날",
+};
+/** 가이드 주제 키 → 관리 화면 이름 */
+export function guideTopicKo(topic: string): string {
+  return (
+    (PLAY_CATEGORY_KO as Record<string, string>)[topic] ?? (CATEGORY_KO as Record<string, string>)[topic] ?? topic
+  );
+}
+
+/**
+ * 이야기 행 중 글쓴이가 고칠 수 있는 칸. slug 가 null 이면 「서버가 정함」(새 글은 임의 이름, 고칠 때는 그대로).
+ * author_id·status·review_note·published_at·verified_at·is_sample 은 여기서 받지 않는다(서버 액션이 따로 정함).
+ */
+export type StoryRow = Pick<
+  Story,
+  | "type"
+  | "guide_topic"
+  | "title_ko"
+  | "title_en"
+  | "summary_ko"
+  | "summary_en"
+  | "cover_photo"
+  | "visited_on"
+  | "tags"
+  | "blocks"
+> & { slug: string | null };
+
+const MAX_STORY_TITLE = 80;
+const MAX_STORY_SUMMARY = 140;
+
+/** 길이를 넘으면 자르지 않고 거절(제목·요약은 잘리면 뜻이 바뀐다) */
+function bounded(v: unknown, max: number): string | null | false {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") return false;
+  const s = v.trim();
+  if (s.length > max) return false;
+  return s || null;
+}
+
+export function parseStoryInput(raw: unknown): Parsed<StoryRow> {
+  const r = rec(raw);
+  const type = String(r.type ?? "");
+  if (!(STORY_TYPES as string[]).includes(type)) return bad("갈래(코스·사람·가이드)를 골라 주세요");
+  const topicRaw = typeof r.guide_topic === "string" ? r.guide_topic.trim() : "";
+  if (type === "guide") {
+    if (!topicRaw) return bad("가이드는 주제(분류)를 골라 주세요");
+    if (!GUIDE_TOPICS.includes(topicRaw)) return bad("가이드 주제는 놀거리·장소 분류 중에서 골라 주세요");
+  } else if (topicRaw) {
+    return bad("주제는 가이드에만 정할 수 있어요");
+  }
+
+  const title_ko = bounded(r.title_ko, MAX_STORY_TITLE);
+  if (title_ko === false) return bad(`제목은 ${MAX_STORY_TITLE}자까지예요`);
+  if (!title_ko) return bad("제목(국문)을 적어 주세요");
+  const title_en = bounded(r.title_en, MAX_STORY_TITLE);
+  if (title_en === false) return bad(`영문 제목은 ${MAX_STORY_TITLE}자까지예요`);
+  const summary_ko = bounded(r.summary_ko, MAX_STORY_SUMMARY);
+  const summary_en = bounded(r.summary_en, MAX_STORY_SUMMARY);
+  if (summary_ko === false || summary_en === false) return bad(`한 줄 요약은 ${MAX_STORY_SUMMARY}자까지예요`);
+
+  let slug: string | null = typeof r.slug === "string" ? r.slug.trim() : "";
+  if (slug) {
+    if (!SLUG_RE.test(slug) || slug.length > 60) {
+      return bad("주소 이름(slug)은 영문 소문자·숫자·하이픈만 (예: rainy-day-hyeonnam)");
+    }
+  } else {
+    slug = title_en ? suggestSlug(title_en) : "";
+    if (!SLUG_RE.test(slug)) slug = null;
+  }
+
+  const coverRaw = typeof r.cover_photo === "string" ? r.cover_photo.trim() : "";
+  let cover_photo: string | null = null;
+  if (coverRaw) {
+    let u: URL | null = null;
+    try {
+      u = new URL(coverRaw);
+    } catch {
+      u = null;
+    }
+    if (!u || u.protocol !== "https:" || !coverRaw.startsWith("https://") || coverRaw.length > 2000) {
+      return bad("대표 사진 주소는 https:// 로 시작해야 해요");
+    }
+    cover_photo = coverRaw;
+  }
+
+  const visited_on = ymd(r.visited_on);
+  if (visited_on === false) return bad("다녀온 날 형식이 잘못됐어요");
+
+  let tags: StoryTag[] = [];
+  if (r.tags !== undefined && r.tags !== null) {
+    if (!Array.isArray(r.tags)) return bad("추천 태그 형식이 잘못됐어요");
+    const given = r.tags.map(String);
+    if (given.some((x) => !(STORY_TAGS as string[]).includes(x))) return bad("추천 태그는 정해진 5개 중에서만 골라 주세요");
+    tags = STORY_TAGS.filter((x) => given.includes(x));
+  }
+
+  const blocks = parseStoryBlocks(r.blocks ?? []);
+  if (!blocks.ok) return blocks;
+
+  return ok({
+    type: type as StoryType,
+    guide_topic: type === "guide" ? topicRaw : null,
+    slug,
+    title_ko,
+    title_en,
+    summary_ko,
+    summary_en,
+    cover_photo,
+    visited_on,
+    tags,
+    blocks: blocks.value,
+  });
 }
