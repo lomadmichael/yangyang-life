@@ -89,6 +89,8 @@ export const en = {
 
   // Stories
   storiesTitle: "Stories",
+  storiesByAuthor: "Stories by {name}",
+  makersStories: "{n} stories",
   storiesLead: "Written by people who walked Hyeonnam themselves",
   storyTypeLabel: "Story types",
   storyTagLabel: "Filter by who it's good for",

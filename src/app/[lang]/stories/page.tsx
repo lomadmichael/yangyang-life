@@ -4,7 +4,7 @@ import { CategoryTabs } from "@/components/CategoryTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { FilterChips, type Chip } from "@/components/FilterChips";
 import { StoryCard } from "@/components/StoryCard";
-import { isLang, t } from "@/i18n";
+import { isLang, t, tf } from "@/i18n";
 import { STORY_TAGS, STORY_TAG_KEY, STORY_TYPES, STORY_TYPE_KEY } from "@/lib/labels";
 import { parseStoriesQuery, storiesQueryString, type StoriesFilter } from "@/lib/list-query";
 import { visibleCategories } from "@/lib/places-filter";
@@ -18,7 +18,12 @@ export default async function StoriesPage({ params, searchParams }: PageProps<"/
   const f = parseStoriesQuery(await searchParams);
   // 한 번만 읽고 탭·칩·목록을 모두 여기서 거른다 (이야기 수가 많지 않다)
   const all = await listStories();
-  const stories = all.filter((s) => (!f.type || s.type === f.type) && (!f.tag || (s.tags ?? []).includes(f.tag)));
+  const stories = all.filter(
+    (s) =>
+      (!f.type || s.type === f.type) && (!f.tag || (s.tags ?? []).includes(f.tag)) && (!f.author || s.author_id === f.author),
+  );
+
+  const authorName = f.author ? stories.find((s) => s.author_name)?.author_name : null;
 
   const base = `/${lang}/stories`;
   const href = (next: StoriesFilter) => `${base}${storiesQueryString(next)}`;
@@ -40,6 +45,9 @@ export default async function StoriesPage({ params, searchParams }: PageProps<"/
       <div className="pt-2">
         <h1 className="text-2xl font-bold">{t(lang, "storiesTitle")}</h1>
         <p className="mt-1 text-sm text-muted">{t(lang, "storiesLead")}</p>
+        {authorName ? (
+          <p className="mt-1 text-sm font-medium text-pine">{tf(lang, "storiesByAuthor", { name: authorName })}</p>
+        ) : null}
       </div>
       {all.length > 0 ? (
         <>

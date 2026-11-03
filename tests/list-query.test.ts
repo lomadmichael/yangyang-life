@@ -28,4 +28,10 @@ describe("list-query", () => {
     expect(parseStoriesQuery({ tag: "rainy" })).toEqual({ tag: "rainy" });
     expect(storiesQueryString({})).toBe("");
   });
+  it("이야기 author: uuid 만, 키 순서 type·tag·author", () => {
+    const id = "123e4567-e89b-12d3-a456-426614174000";
+    expect(parseStoriesQuery({ author: "not-uuid" })).toEqual({});
+    expect(parseStoriesQuery({ author: id })).toEqual({ author: id });
+    expect(storiesQueryString({ author: id, tag: "nocar", type: "course" })).toBe(`?type=course&tag=nocar&author=${id}`);
+  });
 });

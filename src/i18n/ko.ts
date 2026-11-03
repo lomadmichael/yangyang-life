@@ -88,6 +88,8 @@ export const ko = {
 
   // 이야기
   storiesTitle: "이야기",
+  storiesByAuthor: "{name} 님의 이야기",
+  makersStories: "이야기 {n}편",
   storiesLead: "현남을 직접 다닌 사람들이 썼어요",
   storyTypeLabel: "이야기 갈래",
   storyTagLabel: "추천 태그로 거르기",

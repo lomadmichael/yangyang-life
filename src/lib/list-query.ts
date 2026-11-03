@@ -8,6 +8,8 @@ import type { Place, PlayCategory, StoryTag, StoryType } from "./types";
 //   이야기 /stories ?type=course&tag=nocar
 // 모르는 값(옛 분류 키 shop 등)은 오류 없이 무시한다.
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type Raw = Record<string, string | string[] | undefined>;
 
 function one(v: string | string[] | undefined): string | undefined {
@@ -69,6 +71,8 @@ export function playQueryString(f: PlayFilter): string {
 export interface StoriesFilter {
   type?: StoryType;
   tag?: StoryTag;
+  /** 글쓴이(contributors.id) — uuid 만 받는다 */
+  author?: string;
 }
 
 export function parseStoriesQuery(raw: Raw): StoriesFilter {
@@ -77,6 +81,8 @@ export function parseStoriesQuery(raw: Raw): StoriesFilter {
   if (type) f.type = type;
   const tag = pick(STORY_TAGS, one(raw.tag));
   if (tag) f.tag = tag;
+  const author = one(raw.author);
+  if (author && UUID_RE.test(author)) f.author = author;
   return f;
 }
 
@@ -84,5 +90,6 @@ export function storiesQueryString(f: StoriesFilter): string {
   return qs([
     ["type", f.type],
     ["tag", f.tag],
+    ["author", f.author],
   ]);
 }
