@@ -11,6 +11,12 @@ export function isTipTarget(v: unknown): v is TipTarget {
   return typeof v === "string" && (TIP_TARGETS as readonly string[]).includes(v);
 }
 
+/**
+ * 기기 식별 쿠키 이름 — 팁 쓰기·신고(tips/actions.ts)와 MY 「내가 남긴 팁」(my/actions.ts)이 같이 쓴다.
+ * "use server" 파일은 async 함수만 내보낼 수 있어 상수는 여기 둔다. 값(기기 ID)은 로그·응답에 내보내지 않는다.
+ */
+export const DEVICE_COOKIE = "yl_did";
+
 export const NICKNAME_MAX = 20;
 export const BODY_MIN = 2;
 export const BODY_MAX = 500;

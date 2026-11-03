@@ -90,8 +90,16 @@ function SaveToast({ toast, lang }: { toast: Toast; lang: Lang }) {
   );
 }
 
+/**
+ * 이 기기 저장값의 원문 문자열(없거나 막혔으면 null) — ★ 버튼과 MY 목록이 같은 구독을 쓴다.
+ * 문자열이라 값이 같으면 같게 비교된다(effect 의존값으로 써도 된다). 서버 렌더에서는 늘 null.
+ */
+export function useSavedSnapshot(): string | null {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 function useSavedState() {
-  return parseSaved(useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot));
+  return parseSaved(useSavedSnapshot());
 }
 
 const SIZES = {

@@ -5,6 +5,7 @@ import {
   isSaved,
   parseSaved,
   readSaved,
+  sanitizeSavedInput,
   toggleSaved,
   writeSaved,
 } from "../src/lib/saved";
@@ -69,5 +70,21 @@ describe("saved", () => {
     expect(readSaved(storage)).toEqual(s);
     expect(writeSaved(null, s)).toBe(false);
     expect(SAVED_KEY).toBe("yl_saved_v1");
+  });
+  it("sanitizeSavedInput: 서버로 온 값은 믿지 않는다", () => {
+    const A = "11111111-1111-4111-8111-111111111111";
+    const B = "22222222-2222-4222-8222-222222222222";
+    expect(sanitizeSavedInput(null)).toEqual(empty);
+    expect(sanitizeSavedInput("x")).toEqual(empty);
+    expect(sanitizeSavedInput([A])).toEqual(empty);
+    expect(sanitizeSavedInput({ place: A })).toEqual(empty);
+    expect(
+      sanitizeSavedInput({ place: [A, "not-a-uuid", 3, B, A, "' or 1=1"], activity: [B], story: [{}], extra: [A] }),
+    ).toEqual({ place: [A, B], activity: [B], story: [] });
+    const many = Array.from({ length: 150 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`);
+    const out = sanitizeSavedInput({ place: many, activity: [], story: many });
+    expect(out.place).toHaveLength(SAVED_MAX);
+    expect(out.place[0]).toBe(many[0]); // 저장 순서 유지, 앞 100개
+    expect(out.story).toHaveLength(SAVED_MAX);
   });
 });

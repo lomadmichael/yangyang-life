@@ -66,3 +66,22 @@ export function writeSaved(storage: Pick<Storage, "setItem"> | null, s: SavedSta
     return false;
   }
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * 서버 액션으로 넘어온 저장 상태 — 브라우저가 보낸 값은 믿지 않는다.
+ * 종류별로 uuid 모양만 남기고(중복 제거, 저장 순서 유지) 최대 SAVED_MAX 개. 모양이 틀리면 빈 상태.
+ */
+export function sanitizeSavedInput(s: unknown): SavedState {
+  const out = emptyState();
+  if (!s || typeof s !== "object" || Array.isArray(s)) return out;
+  const rec = s as Record<string, unknown>;
+  for (const k of KINDS) {
+    const v = rec[k];
+    if (!Array.isArray(v)) continue;
+    const ids = v.filter((x): x is string => typeof x === "string" && UUID_RE.test(x));
+    out[k] = [...new Set(ids)].slice(0, SAVED_MAX);
+  }
+  return out;
+}

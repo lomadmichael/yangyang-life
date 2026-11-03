@@ -7,6 +7,7 @@ import { serviceClient } from "@/lib/supabase";
 import { tipTargetExists } from "@/lib/queries";
 import {
   CONTACT_MAX,
+  DEVICE_COOKIE,
   POST_DAY_LIMIT,
   POST_DAY_MS,
   REPORT_HIDE_AT,
@@ -19,7 +20,6 @@ import {
 
 // 팁 쓰기·신고 서버 액션. DB 쓰기는 전부 service role — 브라우저엔 키가 가지 않는다.
 
-const DEVICE_COOKIE = "yl_did";
 const ONE_YEAR_S = 60 * 60 * 24 * 365;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
