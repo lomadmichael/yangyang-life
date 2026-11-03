@@ -3,7 +3,7 @@
 //   node scripts/issue-code.mjs "김조사"                       이름이 같은 기여자에게 새 코드 (기존 코드는 무효)
 //   node scripts/issue-code.mjs "이홍래" --create --role owner --team 운영 --role-label PM
 //                                                              실데이터(is_sample=false) 기여자가 없으면 만들고 코드 발급
-//   옵션: --id <uuid>  이름이 같은 사람이 여럿일 때 / --cohort <기수>
+//   옵션: --id <uuid>  이름이 같은 사람이 여럿일 때 / --cohort <기수> / --role owner|editor|member (--create 때만, 기본 member)
 //
 // 코드는 화면에 한 번만 출력된다. DB 에는 HMAC 해시만 저장(src/lib/access-code.ts 와 같은 함수).
 import path from "node:path";
@@ -45,8 +45,8 @@ for (let i = 0; i < args.length; i++) {
   } else positional.push(a);
 }
 const name = positional[0]?.trim();
-if (!name) die('사용법: node scripts/issue-code.mjs "<display_name>" [--create --role owner|member --team 팀 --role-label 역할]');
-if (opts.role && opts.role !== "owner" && opts.role !== "member") die("--role 은 owner 또는 member");
+if (!name) die('사용법: node scripts/issue-code.mjs "<display_name>" [--create --role owner|editor|member --team 팀 --role-label 역할]');
+if (opts.role && !["owner", "editor", "member"].includes(opts.role)) die("--role 은 owner·editor·member 중 하나");
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();

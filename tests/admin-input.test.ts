@@ -28,6 +28,7 @@ const basePlace = {
   how_to_get_ko: "",
   how_to_get_en: "",
 };
+const validPlace = basePlace;
 
 describe("parseHours", () => {
   it("keeps several ranges per day and allows past-midnight (end ≤ start)", () => {
@@ -72,6 +73,13 @@ describe("parsePlaceInput", () => {
     expect(parsePlaceInput({ ...basePlace, lng: "500" }).ok).toBe(false);
     expect(parsePlaceInput({ ...basePlace, category: "pub" }).ok).toBe(false);
   });
+  it("편의는 toilet/shower 만", () => {
+    expect(parsePlaceInput({ ...validPlace, category: "spot", amenities: ["toilet", "wifi"] }).ok).toBe(false);
+    const r = parsePlaceInput({ ...validPlace, category: "spot", amenities: ["shower", "toilet", "toilet"] });
+    expect(r.ok && r.value.amenities).toEqual(["toilet", "shower"]);
+    const none = parsePlaceInput(validPlace);
+    expect(none.ok && none.value.amenities).toEqual([]);
+  });
   it("never accepts code / created_by / verified_* from the client", () => {
     const r = parsePlaceInput({ ...basePlace, code: "zzzzzz", created_by: "x", verified_by: "y", is_sample: true });
     expect(r.ok && Object.keys(r.value)).not.toContain("code");
@@ -110,7 +118,8 @@ describe("parseMenuInput", () => {
 });
 
 describe("parseActivityInput", () => {
-  const base = { kind: "always", title_ko: "해변 요가", weekdays: [6, 0], rainy_ok: false, link: "" };
+  const base = { kind: "always", category: "yoga", title_ko: "해변 요가", weekdays: [6, 0], rainy_ok: false, link: "" };
+  const valid = base;
   it("accepts an always-type activity", () => {
     const r = parseActivityInput(base);
     expect(r.ok && r.value).toMatchObject({ kind: "always", title_ko: "해변 요가", weekdays: [0, 6], starts_on: null });
@@ -123,5 +132,13 @@ describe("parseActivityInput", () => {
   it("link must be http(s)", () => {
     expect(parseActivityInput({ ...base, link: "javascript:alert(1)" }).ok).toBe(false);
     expect(parseActivityInput({ ...base, link: "https://example.com" }).ok).toBe(true);
+  });
+  it("놀거리 분류 필수·계절 1~12", () => {
+    expect(parseActivityInput({ ...valid, category: undefined }).ok).toBe(false);
+    expect(parseActivityInput({ ...valid, category: "village", season_months: [13] }).ok).toBe(false);
+    const r = parseActivityInput({ ...valid, category: "surf", season_months: [10, 4, 4] });
+    expect(r.ok && r.value.season_months).toEqual([4, 10]);
+    const all = parseActivityInput(valid);
+    expect(all.ok && all.value).toMatchObject({ category: "yoga", season_months: [] });
   });
 });

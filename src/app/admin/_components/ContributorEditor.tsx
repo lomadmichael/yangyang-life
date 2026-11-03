@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import type { Role } from "@/lib/permissions";
 import { createContributor, issueContributorCode, revokeContributorCode, updateContributor } from "../actions";
 import { Field, Notice, Pill, btnPrimary, btnSecondary, btnSmall, inputCls } from "./ui";
 
@@ -12,7 +13,7 @@ export interface ContributorValues {
   role_label: string;
   cohort: string;
   show: boolean;
-  role: "owner" | "member";
+  role: Role;
   has_code?: boolean;
   is_sample?: boolean;
 }
@@ -29,6 +30,7 @@ function Fields({ v, set }: { v: ContributorValues; set: (p: Partial<Contributor
         <Field label="권한">
           <select value={v.role} onChange={(e) => set({ role: e.target.value as ContributorValues["role"] })} className={inputCls}>
             <option value="member">참여자 (입력·확인)</option>
+            <option value="editor">편집 (입력·이야기 검토·공개)</option>
             <option value="owner">운영 (전체)</option>
           </select>
         </Field>
@@ -89,6 +91,7 @@ export function ContributorRow({ initial, isMe }: { initial: ContributorValues; 
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="font-bold">{initial.display_name}</span>
         {initial.role === "owner" ? <Pill tone="info">운영</Pill> : null}
+        {initial.role === "editor" ? <Pill tone="info">편집</Pill> : null}
         {initial.has_code ? <Pill tone="ok">코드 있음</Pill> : <Pill tone="warn">코드 없음</Pill>}
         {!initial.show ? <Pill tone="muted">명단 숨김</Pill> : null}
         {initial.is_sample ? <Pill tone="muted">샘플</Pill> : null}

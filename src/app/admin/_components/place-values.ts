@@ -1,4 +1,4 @@
-import type { WeeklyHours } from "@/lib/types";
+import type { Amenity, WeeklyHours } from "@/lib/types";
 import type { AdminPlace } from "../data";
 
 // 가게 폼 값(클라이언트 상태) — "use client" 파일 밖에 두어 서버 컴포넌트에서도 값으로 쓸 수 있게
@@ -21,6 +21,7 @@ export interface PlaceFormValues {
   foreign_card: string;
   how_to_get_ko: string;
   how_to_get_en: string;
+  amenities: Amenity[];
 }
 
 export const EMPTY_PLACE: PlaceFormValues = {
@@ -41,6 +42,7 @@ export const EMPTY_PLACE: PlaceFormValues = {
   foreign_card: "unknown",
   how_to_get_ko: "",
   how_to_get_en: "",
+  amenities: [],
 };
 
 function tri(v: boolean | null): string {
@@ -67,5 +69,6 @@ export function placeToValues(p: AdminPlace): PlaceFormValues {
     foreign_card: tri(p.foreign_card),
     how_to_get_ko: p.how_to_get_ko ?? "",
     how_to_get_en: p.how_to_get_en ?? "",
+    amenities: p.amenities ?? [],
   };
 }

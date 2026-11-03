@@ -1,9 +1,14 @@
 import type { AdminActivity } from "../data";
+import type { PlayCategory } from "@/lib/types";
 
 // 할 거리 폼 값 — "use client" 밖에 두어 서버 컴포넌트에서도 값으로 쓴다
 
 export interface ActivityFormValues {
   kind: "dated" | "always";
+  /** 빈 문자열 = 아직 안 고름(저장 시 거절) */
+  category: PlayCategory | "";
+  /** 1~12. 비우면 사계절 */
+  season_months: number[];
   title_ko: string;
   title_en: string;
   desc_ko: string;
@@ -22,6 +27,8 @@ export interface ActivityFormValues {
 
 export const EMPTY_ACTIVITY: ActivityFormValues = {
   kind: "dated",
+  category: "",
+  season_months: [],
   title_ko: "",
   title_en: "",
   desc_ko: "",
@@ -41,6 +48,8 @@ export const EMPTY_ACTIVITY: ActivityFormValues = {
 export function activityToValues(a: AdminActivity): ActivityFormValues {
   return {
     kind: a.kind,
+    category: a.category ?? "",
+    season_months: a.season_months ?? [],
     title_ko: a.title_ko,
     title_en: a.title_en ?? "",
     desc_ko: a.desc_ko ?? "",

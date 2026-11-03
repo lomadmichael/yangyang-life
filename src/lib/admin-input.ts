@@ -1,5 +1,6 @@
 import { ko } from "../i18n/ko";
-import type { Activity, MenuItem, Place, VerifiedMethod, Weekday, WeeklyHours } from "./types";
+import { AMENITIES, PLAY_CATEGORIES } from "./labels";
+import type { Activity, Amenity, MenuItem, Place, PlayCategory, VerifiedMethod, Weekday, WeeklyHours } from "./types";
 
 // 관리 화면 입력 검사 — 브라우저가 보낸 값은 전부 여기서 다시 확인해 DB 행으로 바꾼다.
 // 클라이언트가 보낸 code·created_by·verified_*·is_sample 은 절대 받지 않는다(서버 액션이 따로 채움).
@@ -31,6 +32,21 @@ export const CATEGORY_KO: Record<Place["category"], string> = {
   spot: "해변·명소",
   life: "생활 편의",
 };
+/** 장소 분류 중 가격대·영어 메뉴가 없는 곳(해변·명소, 생활 편의) — 폼에서 그 칸을 숨기고 편의를 보인다 */
+export const NON_DINING_CATEGORIES: readonly Place["category"][] = ["spot", "life"];
+export const AMENITY_KO: Record<Amenity, string> = { toilet: "화장실", shower: "샤워장" };
+export const PLAY_CATEGORY_KO: Record<PlayCategory, string> = {
+  surf: "서핑·SUP",
+  festival: "축제·행사",
+  eco: "생태·자연",
+  hike: "등산",
+  fishing: "낚시",
+  walk: "산책 코스",
+  yoga: "요가·웰니스",
+  village: "마을·농촌 체험",
+};
+export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+
 export const STATUS_KO: Record<Place["status"], string> = {
   participating: "참여 가게 (사진·영어 메뉴 공개)",
   listed: "일반 (정보만)",
@@ -126,8 +142,6 @@ export type PlaceRow = Omit<
   | "created_by_name"
   | "has_english_menu"
   | "is_sample"
-  // v2 새 칸(amenities)은 입력 폼이 붙을 때(Task 9) 받는다. 그전엔 DB 기본값 '{}'
-  | "amenities"
 >;
 
 export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
@@ -154,6 +168,14 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
   if (![1, 2, 3].includes(price)) return bad("가격대를 골라 주세요");
   const hours = parseHours(r.hours ?? {});
   if (!hours.ok) return hours;
+  // 편의: 없으면 빈 배열. 모르는 값이 섞이면 거절. 순서는 AMENITIES 순서로 고정(중복 제거)
+  let amenities: Amenity[] = [];
+  if (r.amenities !== undefined && r.amenities !== null) {
+    if (!Array.isArray(r.amenities)) return bad("편의 형식이 잘못됐어요");
+    const given = r.amenities.map(String);
+    if (given.some((a) => !(AMENITIES as string[]).includes(a))) return bad("편의는 화장실·샤워장만 고를 수 있어요");
+    amenities = AMENITIES.filter((a) => given.includes(a));
+  }
 
   return ok({
     slug,
@@ -173,6 +195,7 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
     foreign_card: triState(r.foreign_card),
     how_to_get_ko: text(r.how_to_get_ko, 1000),
     how_to_get_en: text(r.how_to_get_en, 1000),
+    amenities,
   });
 }
 
@@ -223,9 +246,6 @@ export type ActivityRow = Omit<
   | "verified_by_name"
   | "created_by_name"
   | "is_sample"
-  // v2 새 칸(category·season_months)은 입력 폼이 붙을 때(Task 9) 받는다. 그전엔 DB 기본값
-  | "category"
-  | "season_months"
 >;
 
 function ymd(v: unknown): string | null | false {
@@ -240,6 +260,16 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
   const r = rec(raw);
   const kind = String(r.kind ?? "");
   if (kind !== "dated" && kind !== "always") return bad("종류(기간 행사 / 상시)를 골라 주세요");
+  const category = String(r.category ?? "");
+  if (!(PLAY_CATEGORIES as string[]).includes(category)) return bad("분류를 골라 주세요");
+  // 운영 계절: 1~12월 정수만. 비우면 사계절. 정렬·중복 제거
+  let season_months: number[] = [];
+  if (r.season_months !== undefined && r.season_months !== null) {
+    if (!Array.isArray(r.season_months)) return bad("운영 계절 형식이 잘못됐어요");
+    const months = r.season_months.map(Number);
+    if (months.some((m) => !Number.isInteger(m) || m < 1 || m > 12)) return bad("운영 계절은 1~12월만 고를 수 있어요");
+    season_months = [...new Set(months)].sort((a, b) => a - b);
+  }
   const title_ko = text(r.title_ko, 120);
   if (!title_ko) return bad("제목(국문)을 적어 주세요");
   const starts_on = ymd(r.starts_on);
@@ -257,6 +287,8 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
 
   return ok({
     kind,
+    category: category as PlayCategory,
+    season_months,
     title_ko,
     title_en: text(r.title_en, 120),
     desc_ko: text(r.desc_ko, 2000),

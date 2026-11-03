@@ -1,7 +1,17 @@
 import "server-only";
 import { sampleOptions, showSamples } from "@/lib/samples";
 import { serviceClient } from "@/lib/supabase";
-import type { MenuItem, PlaceCategory, VerifiedMethod, WeeklyHours } from "@/lib/types";
+import type { Role } from "@/lib/permissions";
+import type {
+  Amenity,
+  MenuItem,
+  PlaceCategory,
+  PlayCategory,
+  StoryBlock,
+  StoryType,
+  VerifiedMethod,
+  WeeklyHours,
+} from "@/lib/types";
 
 // 관리 화면 읽기 — 원본 테이블을 service role 로 읽는다(anon 은 원본 권한 0).
 
@@ -25,6 +35,8 @@ export interface AdminPlace {
   foreign_card: boolean | null;
   how_to_get_ko: string | null;
   how_to_get_en: string | null;
+  /** 0003 이후 칸. 적용 전 DB 에서는 없을 수 있다 */
+  amenities?: Amenity[];
   photos: string[];
   verified_method: VerifiedMethod;
   verified_at: string | null;
@@ -37,6 +49,9 @@ export interface AdminPlace {
 export interface AdminActivity {
   id: string;
   kind: "dated" | "always";
+  /** 0003 이후 칸. 적용 전 DB 에서는 없을 수 있다 */
+  category?: PlayCategory;
+  season_months?: number[];
   title_ko: string;
   title_en: string | null;
   desc_ko: string | null;
@@ -65,7 +80,7 @@ export interface AdminContributor {
   role_label: string | null;
   cohort: string | null;
   show: boolean;
-  role: "owner" | "member";
+  role: Role;
   has_code: boolean;
   is_sample: boolean;
   created_at: string;
@@ -148,3 +163,30 @@ export async function placeOptions(keepId?: string | null): Promise<{ id: string
 
 // 재확인 기준(90일)·판정은 공개 화면과 같이 쓰도록 lib 로 옮겼다
 export { isStale } from "@/lib/stale";
+
+/** 재확인 목록용 공개 이야기 — 원본 stories 테이블에서 status='published' 만(0003 적용 후) */
+export interface AdminPublishedStory {
+  id: string;
+  slug: string;
+  type: StoryType;
+  guide_topic: string | null;
+  title_ko: string;
+  blocks: StoryBlock[];
+  published_at: string | null;
+  verified_at: string | null;
+  is_sample: boolean;
+}
+
+export async function listPublishedStoriesAdmin(): Promise<AdminPublishedStory[]> {
+  const rows =
+    must(
+      "이야기",
+      await serviceClient()
+        .from("stories")
+        .select("id,slug,type,guide_topic,title_ko,blocks,published_at,verified_at,is_sample")
+        .eq("status", "published")
+        .order("published_at", { ascending: false }),
+    ) ?? [];
+  // blocks 는 jsonb — 배열이 아니면(망가진 행) 빈 배열로 본다
+  return (rows as AdminPublishedStory[]).map((s) => ({ ...s, blocks: Array.isArray(s.blocks) ? s.blocks : [] }));
+}

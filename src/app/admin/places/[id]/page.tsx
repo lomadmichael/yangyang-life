@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isUuid } from "@/lib/admin-input";
+import { NON_DINING_CATEGORIES, isUuid } from "@/lib/admin-input";
 import { photoUrl } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { translationAvailable } from "@/lib/translate";
@@ -25,6 +25,8 @@ export default async function EditPlacePage({ params }: PageProps<"/admin/places
   const createdBy = place.created_by ? (names.get(place.created_by) ?? null) : null;
   const participating = place.status === "participating";
   const menuEn = menu.filter((m) => m.name_en?.trim()).length;
+  // 해변·명소, 생활 편의는 메뉴·영어 메뉴판 QR 이 없다(이미 있는 메뉴 데이터는 지우지 않고 칸만 숨김)
+  const dining = !NON_DINING_CATEGORIES.includes(place.category);
 
   return (
     <>
@@ -55,19 +57,21 @@ export default async function EditPlacePage({ params }: PageProps<"/admin/places
 
       <PlaceForm placeId={place.id} code={place.code} initial={placeToValues(place)} aiEnabled={translationAvailable()} />
 
-      <Card
-        title="메뉴"
-        aside={
-          <Link href={`/admin/places/${place.id}/menu`} className={btnSecondary}>
-            메뉴 편집
-          </Link>
-        }
-      >
-        <p className="text-sm text-muted">
-          메뉴 {menu.length}개 · 영문 이름 있는 것 {menuEn}개
-          {participating ? "" : " — 영어 메뉴판은 참여 가게가 되면 공개돼요."}
-        </p>
-      </Card>
+      {dining ? (
+        <Card
+          title="메뉴"
+          aside={
+            <Link href={`/admin/places/${place.id}/menu`} className={btnSecondary}>
+              메뉴 편집
+            </Link>
+          }
+        >
+          <p className="text-sm text-muted">
+            메뉴 {menu.length}개 · 영문 이름 있는 것 {menuEn}개
+            {participating ? "" : " — 영어 메뉴판은 참여 가게가 되면 공개돼요."}
+          </p>
+        </Card>
+      ) : null}
 
       <Card title="사진">
         {participating ? (
@@ -79,30 +83,32 @@ export default async function EditPlacePage({ params }: PageProps<"/admin/places
         )}
       </Card>
 
-      <Card title="QR · 인쇄">
-        <p className="text-sm text-muted">
-          QR 코드 <span className="font-mono">{place.code}</span> — 가게 주소(slug)를 바꿔도 QR 은 그대로 영어 메뉴판으로 가요.
-        </p>
-        {participating ? (
-          <div className="flex flex-wrap gap-2">
-            <a href={`/admin/places/${place.id}/qr?format=png`} className={btnSecondary}>
-              QR 다운로드 (PNG)
-            </a>
-            <a href={`/admin/places/${place.id}/qr?format=svg`} className={btnSecondary}>
-              QR 다운로드 (SVG)
-            </a>
-            {menuEn > 0 ? (
-              <a href={`/print/menu/${place.code}`} target="_blank" rel="noreferrer" className={btnSecondary}>
-                영어 메뉴판 인쇄 ↗
+      {dining ? (
+        <Card title="QR · 인쇄">
+          <p className="text-sm text-muted">
+            QR 코드 <span className="font-mono">{place.code}</span> — 가게 주소(slug)를 바꿔도 QR 은 그대로 영어 메뉴판으로 가요.
+          </p>
+          {participating ? (
+            <div className="flex flex-wrap gap-2">
+              <a href={`/admin/places/${place.id}/qr?format=png`} className={btnSecondary}>
+                QR 다운로드 (PNG)
               </a>
-            ) : (
-              <p className="text-sm text-muted">영어 메뉴판 인쇄는 메뉴에 영문 이름을 하나라도 넣으면 열려요.</p>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted">QR·인쇄는 참여 가게만 만들 수 있어요.</p>
-        )}
-      </Card>
+              <a href={`/admin/places/${place.id}/qr?format=svg`} className={btnSecondary}>
+                QR 다운로드 (SVG)
+              </a>
+              {menuEn > 0 ? (
+                <a href={`/print/menu/${place.code}`} target="_blank" rel="noreferrer" className={btnSecondary}>
+                  영어 메뉴판 인쇄 ↗
+                </a>
+              ) : (
+                <p className="text-sm text-muted">영어 메뉴판 인쇄는 메뉴에 영문 이름을 하나라도 넣으면 열려요.</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">QR·인쇄는 참여 가게만 만들 수 있어요.</p>
+          )}
+        </Card>
+      ) : null}
 
       {can(admin.role, "delete_content") ? (
         <Card title="지우기 (운영 담당만)">

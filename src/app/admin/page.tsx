@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { can } from "@/lib/permissions";
 import { sampleValues } from "@/lib/samples";
+import { STALE_DAYS } from "@/lib/stale";
 import { serviceClient } from "@/lib/supabase";
 import { requireAdmin } from "./auth";
 import { Card, PageTitle, btnSecondary } from "./_components/ui";
-
-const STALE_DAYS = 30;
 
 export default async function AdminHome() {
   const admin = await requireAdmin();
@@ -15,12 +15,17 @@ export default async function AdminHome() {
   // 운영(샘플 숨김)에서는 샘플 가게·할 거리를 개수에서 뺀다
   const samples = sampleValues();
 
-  const [stale, changed, places, activities] = await Promise.all([
+  const [stale, staleActivities, changed, places, activities] = await Promise.all([
     db
       .from("places")
       .select("id", { count: "exact", head: true })
       .in("is_sample", samples)
       .neq("status", "closed")
+      .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
+    db
+      .from("activities")
+      .select("id", { count: "exact", head: true })
+      .in("is_sample", samples)
       .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
     db
       .from("tips")
@@ -31,7 +36,7 @@ export default async function AdminHome() {
     db.from("places").select("id", { count: "exact", head: true }).in("is_sample", samples),
     db.from("activities").select("id", { count: "exact", head: true }).in("is_sample", samples),
   ]);
-  for (const r of [stale, changed, places, activities]) if (r.error) throw new Error(r.error.message);
+  for (const r of [stale, staleActivities, changed, places, activities]) if (r.error) throw new Error(r.error.message);
 
   return (
     <>
@@ -42,12 +47,22 @@ export default async function AdminHome() {
           <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{stale.count ?? 0}</p>
           <p className="mt-1 text-xs text-muted">휴업 제외 · 확인 기록 없는 곳 포함</p>
         </Link>
+        <Link href="/admin/activities" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
+          <p className="text-sm text-muted">확인 {STALE_DAYS}일 지난 할 거리</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{staleActivities.count ?? 0}</p>
+          <p className="mt-1 text-xs text-muted">확인 기록 없는 것 포함</p>
+        </Link>
         <Link href="/admin/tips" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
           <p className="text-sm text-muted">새 「바뀌었어요」 팁</p>
           <p className="mt-1 text-3xl font-bold tabular-nums text-sea">{changed.count ?? 0}</p>
           <p className="mt-1 text-xs text-muted">처리 전 · 숨김 제외</p>
         </Link>
       </div>
+      {can(admin.role, "publish_story") ? (
+        <Link href="/admin/stale" className="rounded-xl border border-line bg-surface p-4 font-medium text-sea hover:border-sea">
+          재확인 목록 보기 → <span className="text-sm font-normal text-muted">장소·놀거리·가이드·들른 곳 확인 필요 이야기</span>
+        </Link>
+      ) : null}
       <Card title="바로 가기">
         <div className="grid grid-cols-2 gap-2">
           <Link href="/admin/places/new" className={btnSecondary}>
