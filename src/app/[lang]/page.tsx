@@ -62,20 +62,27 @@ export default async function HomePage({ params, searchParams }: PageProps<"/[la
   const thisWeek = play ? [...play.dated, ...play.always].slice(0, PLAY_MAX) : [];
 
   // ④ 항목이 있는 분류만(R18), 장소 → 놀거리 순, 최대 8칸. 놀거리는 놀거리 화면 탭과 같은 기준(오늘 볼 수 있는 것)
+  // 장소 분류(최대 7)가 8칸을 다 먹지 않게 각자 절반을 먼저 보장하고, 남는 칸은 다른 쪽이 채운다.
+  const placeCuts: Shortcut[] = (places ? visibleCategories(CATEGORIES, places) : []).map((c) => ({
+    key: `place-${c}`,
+    href: `/${lang}/places${placesQueryString({ category: c })}`,
+    label: t(lang, CATEGORY_KEY[c]),
+    kind: "place" as const,
+  }));
+  const playCuts: Shortcut[] = (
+    activities ? visibleCategories(PLAY_CATEGORIES, activitiesForDay(activities, now, {})) : []
+  ).map((c) => ({
+    key: `play-${c}`,
+    href: `/${lang}/play${playQueryString({ category: c })}`,
+    label: t(lang, PLAY_CATEGORY_KEY[c]),
+    kind: "play" as const,
+  }));
+  const half = SHORTCUT_MAX / 2;
+  const placeTake = Math.min(placeCuts.length, Math.max(half, SHORTCUT_MAX - playCuts.length));
   const shortcuts: Shortcut[] = [
-    ...(places ? visibleCategories(CATEGORIES, places) : []).map((c) => ({
-      key: `place-${c}`,
-      href: `/${lang}/places${placesQueryString({ category: c })}`,
-      label: t(lang, CATEGORY_KEY[c]),
-      kind: "place" as const,
-    })),
-    ...(activities ? visibleCategories(PLAY_CATEGORIES, activitiesForDay(activities, now, {})) : []).map((c) => ({
-      key: `play-${c}`,
-      href: `/${lang}/play${playQueryString({ category: c })}`,
-      label: t(lang, PLAY_CATEGORY_KEY[c]),
-      kind: "play" as const,
-    })),
-  ].slice(0, SHORTCUT_MAX);
+    ...placeCuts.slice(0, placeTake),
+    ...playCuts.slice(0, SHORTCUT_MAX - placeTake),
+  ];
 
   const newStories = (stories ?? []).slice(0, STORY_MAX);
   const makers = contributors ? contributors.filter((c) => c.show).length : 0;
