@@ -25,9 +25,11 @@ export const WEEKDAY_NUM_KO = ["일", "월", "화", "수", "목", "금", "토"];
 export const CATEGORY_KO: Record<Place["category"], string> = {
   food: "식당",
   cafe: "카페",
-  bar: "바·술집",
+  stay: "숙소",
   surf: "서핑샵",
-  shop: "가게(상점)",
+  bar: "펍·바",
+  spot: "해변·명소",
+  life: "생활 편의",
 };
 export const STATUS_KO: Record<Place["status"], string> = {
   participating: "참여 가게 (사진·영어 메뉴 공개)",
@@ -124,6 +126,8 @@ export type PlaceRow = Omit<
   | "created_by_name"
   | "has_english_menu"
   | "is_sample"
+  // v2 새 칸(amenities)은 입력 폼이 붙을 때(Task 9) 받는다. 그전엔 DB 기본값 '{}'
+  | "amenities"
 >;
 
 export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
@@ -213,7 +217,15 @@ export function parseMenuInput(raw: unknown): Parsed<MenuRow[]> {
 
 export type ActivityRow = Omit<
   Activity,
-  "id" | "verified_method" | "verified_at" | "verified_by_name" | "created_by_name" | "is_sample"
+  | "id"
+  | "verified_method"
+  | "verified_at"
+  | "verified_by_name"
+  | "created_by_name"
+  | "is_sample"
+  // v2 새 칸(category·season_months)은 입력 폼이 붙을 때(Task 9) 받는다. 그전엔 DB 기본값
+  | "category"
+  | "season_months"
 >;
 
 function ymd(v: unknown): string | null | false {

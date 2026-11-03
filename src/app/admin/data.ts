@@ -1,7 +1,7 @@
 import "server-only";
 import { sampleOptions, showSamples } from "@/lib/samples";
 import { serviceClient } from "@/lib/supabase";
-import type { MenuItem, VerifiedMethod, WeeklyHours } from "@/lib/types";
+import type { MenuItem, PlaceCategory, VerifiedMethod, WeeklyHours } from "@/lib/types";
 
 // 관리 화면 읽기 — 원본 테이블을 service role 로 읽는다(anon 은 원본 권한 0).
 
@@ -9,7 +9,7 @@ export interface AdminPlace {
   id: string;
   code: string;
   slug: string;
-  category: "food" | "cafe" | "bar" | "surf" | "shop";
+  category: PlaceCategory;
   status: "participating" | "listed" | "closed";
   name_ko: string;
   name_en: string | null;

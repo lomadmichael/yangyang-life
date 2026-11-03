@@ -24,6 +24,8 @@ function act(p: Partial<Activity> & { id: string }): Activity {
     verified_by_name: null,
     created_by_name: null,
     is_sample: true,
+    category: "village",
+    season_months: [],
     ...p,
   };
 }

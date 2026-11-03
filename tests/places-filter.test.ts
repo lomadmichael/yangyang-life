@@ -29,6 +29,7 @@ function place(p: Partial<Place> & { id: string }): Place {
     created_by_name: null,
     has_english_menu: false,
     is_sample: true,
+    amenities: [],
     ...p,
   };
 }
