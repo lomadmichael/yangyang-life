@@ -38,7 +38,7 @@ export function activeTab(pathname: string): Tab | null {
 export function BottomNav({ lang }: { lang: Lang }) {
   const pathname = usePathname() ?? `/${lang}`;
   // 영어 메뉴판(QR 착지)에는 그리지 않는다
-  if (pathname.includes("/m/")) return null;
+  if (pathname.split("/")[2] === "m") return null;
   const current = activeTab(pathname);
 
   return (
