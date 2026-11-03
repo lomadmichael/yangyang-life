@@ -225,9 +225,15 @@ describe.skipIf(!hasStories)("이야기 queries (0003 적용 후, 샘플 숨김)
     if (original !== undefined) process.env.YL_SHOW_SAMPLES = original;
   });
 
-  it("샘플 이야기도 안 나온다", async () => {
-    expect(await listStories()).toEqual([]);
-    expect(await listStoriesByIds(["00000000-0000-4000-8000-000000000501"])).toEqual([]);
-    expect(await tipTargetExists("story", "00000000-0000-4000-8000-000000000501")).toBe(false);
+  it("샘플 이야기도 안 나온다 (실데이터 이야기가 들어와도 유지되는 검사)", async () => {
+    const sampleStories = [501, 502, 503].map((n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
+    const stories = await listStories();
+    expect(stories.every((s) => !s.is_sample)).toBe(true);
+    expect(stories.map((s) => s.id).filter((id) => sampleStories.includes(id))).toEqual([]);
+    expect(await listStoriesByIds(sampleStories)).toEqual([]);
+    for (const id of sampleStories) {
+      expect(await tipTargetExists("story", id), id).toBe(false);
+      expect(await listTips("story", id), id).toEqual([]);
+    }
   });
 });
