@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { filterPlaces } from "../src/lib/places-filter";
+import { filterPlaces, visibleCategories } from "../src/lib/places-filter";
+import { CATEGORIES } from "../src/lib/labels";
 import type { Place } from "../src/lib/types";
 
 function place(p: Partial<Place> & { id: string }): Place {
@@ -85,5 +86,17 @@ describe("filterPlaces", () => {
     const before = ids(samples);
     filterPlaces(samples, {}, satNoon);
     expect(ids(samples)).toEqual(before);
+  });
+});
+
+describe("visibleCategories", () => {
+  it("항목이 있는 분류만, 정해진 순서대로", () => {
+    const items = [place({ id: "a", category: "life" }), place({ id: "b", category: "cafe" }), place({ id: "c", category: "life" })];
+    expect(visibleCategories(CATEGORIES, items)).toEqual(["cafe", "life"]);
+    expect(visibleCategories(CATEGORIES, [])).toEqual([]);
+    expect(visibleCategories(["village", "surf"] as const, [{ category: "surf" }, { category: "village" }])).toEqual([
+      "village",
+      "surf",
+    ]);
   });
 });

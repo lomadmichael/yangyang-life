@@ -146,7 +146,5 @@ export async function placeOptions(keepId?: string | null): Promise<{ id: string
   return sampleOptions(rows, showSamples(), keepId);
 }
 
-export function isStale(verifiedAt: string | null, now: Date, days = 30): boolean {
-  if (!verifiedAt) return true;
-  return now.getTime() - new Date(verifiedAt).getTime() > days * 24 * 60 * 60 * 1000;
-}
+// 재확인 기준(90일)·판정은 공개 화면과 같이 쓰도록 lib 로 옮겼다
+export { isStale } from "@/lib/stale";

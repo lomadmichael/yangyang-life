@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { FilterChips, type Chip } from "@/components/FilterChips";
 import { PlaceCard } from "@/components/PlaceCard";
 import { isLang, t } from "@/i18n";
-import { eatQueryString, parseEatQuery } from "@/lib/eat-query";
+import { parsePlacesQuery, placesQueryString } from "@/lib/list-query";
 import { CATEGORIES, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
 import { filterPlaces, type PlaceFilter } from "@/lib/places-filter";
 import { listPlaces } from "@/lib/queries";
@@ -15,11 +15,11 @@ export default async function EatPage({ params, searchParams }: PageProps<"/[lan
   if (!isLang(lang)) notFound();
   await connection(); // 「지금 영업 중」은 요청 시각 기준
 
-  const f = parseEatQuery(await searchParams);
+  const f = parsePlacesQuery(await searchParams);
   const now = new Date();
   const places = filterPlaces(await listPlaces(), f, now);
   const base = `/${lang}/eat`;
-  const href = (next: PlaceFilter) => `${base}${eatQueryString(next)}`;
+  const href = (next: PlaceFilter) => `${base}${placesQueryString(next)}`;
 
   const categoryChips: Chip[] = [
     { label: t(lang, "filterAll"), href: href({ ...f, category: undefined }), active: !f.category },
@@ -39,7 +39,7 @@ export default async function EatPage({ params, searchParams }: PageProps<"/[lan
       active: f.price === p,
     })),
   ];
-  const filtered = eatQueryString(f) !== "";
+  const filtered = placesQueryString(f) !== "";
 
   return (
     <div className="flex flex-col gap-4 px-4 pb-10">
