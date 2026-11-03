@@ -30,7 +30,7 @@ export const en = {
   filterLabel: "Filter the list",
   filterAll: "All",
   filterOpenNow: "Open now",
-  filterEnglishMenu: "English menu",
+  filterEnglishMenu: "EN menu",
   filterReset: "Clear all filters",
   catFood: "Restaurants",
   catCafe: "Cafés",
@@ -68,6 +68,19 @@ export const en = {
   badgeEnglishMenu: "English menu",
   emptyPlacesTitle: "No places match",
   emptyPlacesBody: "Try removing a filter or two.",
+  placesTitle: "Places",
+  placesCount: "{n} places",
+  placesCountOne: "{n} place",
+  categoryLabel: "Categories",
+  placeStoriesTitle: "Stories featuring this place",
+  placeActivitiesTitle: "Things to do here",
+  storyByline: "By {name}",
+
+  // Save (this device)
+  saveLabel: "Save",
+  savedToast: "Saved",
+  savedToastLink: "See in My",
+  saveFailed: "Can't save in this browser",
 
   // What to do
   doTitle: "What to do today",

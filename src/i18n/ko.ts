@@ -67,6 +67,19 @@ export const ko = {
   badgeEnglishMenu: "영어 메뉴판",
   emptyPlacesTitle: "조건에 맞는 가게가 없어요",
   emptyPlacesBody: "조건을 줄여서 다시 찾아보세요.",
+  placesTitle: "장소",
+  placesCount: "{n}곳",
+  placesCountOne: "{n}곳",
+  categoryLabel: "분류",
+  placeStoriesTitle: "이 장소가 나오는 이야기",
+  placeActivitiesTitle: "여기서 할 수 있는 놀거리",
+  storyByline: "글: {name}",
+
+  // ★ 저장 (이 기기)
+  saveLabel: "저장",
+  savedToast: "저장했어요",
+  savedToastLink: "MY에서 보기",
+  saveFailed: "이 브라우저에선 저장할 수 없어요",
 
   // 오늘 뭐하지
   doTitle: "오늘 뭐하지",
