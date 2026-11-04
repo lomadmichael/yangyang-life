@@ -16,6 +16,14 @@ import {
 import { photoUrl } from "@/lib/format";
 import { isRole } from "@/lib/permissions";
 import { canEditStory, nextStatusOnSave } from "@/lib/story-status";
+import {
+  PHOTO_BUCKET,
+  orphanStoryPhotos,
+  realPhotoObjects,
+  storyPhotoFolder,
+  storyPhotoUrls,
+  type StorageObject,
+} from "@/lib/story-photos";
 import type { StoryStatus } from "@/lib/types";
 import { ADMIN_COOKIE, ADMIN_COOKIE_PATH, SESSION_TTL_S, makeSession } from "@/lib/session";
 import { serviceClient } from "@/lib/supabase";
@@ -178,7 +186,6 @@ export async function deletePlace(id: string): Promise<ActionResult> {
 
 // ───────────────────────── 사진 ─────────────────────────
 
-const PHOTO_BUCKET = "place-photos";
 // Vercel 함수 요청 본문 한도 4.5MB 보다 작게 (next.config.ts bodySizeLimit 4.5mb, PhotoManager MAX_BYTES 와 같이)
 const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 const PHOTO_MAX_COUNT = 12;
@@ -584,7 +591,7 @@ export async function saveStory(
   if (!admin) return denied;
   if (id !== null && !isUuid(id)) return fail("잘못된 이야기입니다.");
   if (intent !== "save" && intent !== "submit") return fail("잘못된 요청입니다.");
-  const parsed = parseStoryInput(input);
+  const parsed = parseStoryInput(input, supabaseUrl());
   if (!parsed.ok) return fail(parsed.error);
   const row = parsed.value;
   if (intent === "submit" && !row.cover_photo) {
@@ -625,6 +632,7 @@ export async function saveStory(
       throw error;
     }
     if (!data?.length) return fail(STALE_STATE);
+    await cleanupStoryPhotos(id, storyPhotoUrls(row));
     refreshAll();
     const message =
       meta.status === "published" && status === "review"
@@ -733,6 +741,40 @@ export async function verifyGuide(id: string): Promise<ActionResult> {
   return { ok: true, message: `가이드를 오늘 확인한 것으로 기록했어요 (${admin.display_name}).` };
 }
 
+function supabaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+}
+
+/** 이야기 사진 폴더(stories/{id}) 의 파일 목록. 실패하면 throw */
+async function listStoryPhotoObjects(storyId: string): Promise<StorageObject[]> {
+  const { data, error } = await serviceClient()
+    .storage.from(PHOTO_BUCKET)
+    .list(storyPhotoFolder(storyId), { limit: 1000 });
+  if (error) throw error;
+  return (data ?? []) as StorageObject[];
+}
+
+/**
+ * 저장 뒤 정리 — 이야기 폴더에서 저장된 대표 사진·사진 블록에 없는 파일을 지운다(방금 올린 것은 남김, orphanStoryPhotos).
+ * 정리가 실패해도 저장은 이미 끝났으므로 로그만 남긴다.
+ */
+async function cleanupStoryPhotos(storyId: string, keptUrls: string[]): Promise<void> {
+  try {
+    const orphans = orphanStoryPhotos({
+      storyId,
+      objects: await listStoryPhotoObjects(storyId),
+      keptUrls,
+      supabaseUrl: supabaseUrl(),
+      now: new Date(),
+    });
+    if (!orphans.length) return;
+    const { error } = await serviceClient().storage.from(PHOTO_BUCKET).remove(orphans);
+    if (error) throw error;
+  } catch (e) {
+    logErr("saveStory:cleanupPhotos", e);
+  }
+}
+
 /**
  * 이야기 사진 올리기 — 가게 사진과 같은 place-photos 버킷, 경로 stories/{이야기 id}/….
  * 이야기 행은 바꾸지 않고 공개 주소만 돌려준다(브라우저가 대표 사진·사진 블록에 넣고 「저장」해야 반영).
@@ -755,7 +797,11 @@ export async function uploadStoryPhoto(formData: FormData): Promise<ActionResult
     if (!meta) return fail("이야기를 찾을 수 없어요.");
     const isAuthor = meta.author_id !== null && meta.author_id === admin.id;
     if (!canEditStory(admin.role, isAuthor)) return fail(NOT_YOURS);
-    const name = `stories/${storyId}/${Date.now().toString(36)}-${randomBytes(4).toString("hex")}.${ext}`;
+    // 한 이야기 사진 상한 = 가게 사진 상한과 같게. 저장 안 한 사진도 저장 뒤 정리 전까지는 센다
+    if (realPhotoObjects(await listStoryPhotoObjects(storyId)).length >= PHOTO_MAX_COUNT) {
+      return fail(`이야기 하나에 사진은 ${PHOTO_MAX_COUNT}장까지예요. 안 쓰는 사진을 빼고 「저장」해 주세요 — 올린 지 10분이 지난 사진부터 저장할 때 정리돼요.`);
+    }
+    const name = `${storyPhotoFolder(storyId)}/${Date.now().toString(36)}-${randomBytes(4).toString("hex")}.${ext}`;
     const { error } = await serviceClient()
       .storage.from(PHOTO_BUCKET)
       .upload(name, Buffer.from(await file.arrayBuffer()), { contentType: file.type, upsert: false });

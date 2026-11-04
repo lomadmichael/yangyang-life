@@ -1,6 +1,7 @@
 import { ko } from "../i18n/ko";
 import { AMENITIES, CATEGORIES, PLAY_CATEGORIES, STORY_TAGS, STORY_TYPES } from "./labels";
 import { parseStoryBlocks } from "./story-blocks";
+import { isAllowedPhotoUrl } from "./story-photos";
 import type {
   Activity,
   Amenity,
@@ -372,7 +373,8 @@ function bounded(v: unknown, max: number): string | null | false {
   return s || null;
 }
 
-export function parseStoryInput(raw: unknown): Parsed<StoryRow> {
+/** supabaseUrl: 대표 사진·사진 블록 주소의 허용 기준(NEXT_PUBLIC_SUPABASE_URL) — 순수 함수라 env 를 직접 읽지 않는다 */
+export function parseStoryInput(raw: unknown, supabaseUrl: string): Parsed<StoryRow> {
   const r = rec(raw);
   const type = String(r.type ?? "");
   if (!(STORY_TYPES as string[]).includes(type)) return bad("갈래(코스·사람·가이드)를 골라 주세요");
@@ -406,15 +408,7 @@ export function parseStoryInput(raw: unknown): Parsed<StoryRow> {
   const coverRaw = typeof r.cover_photo === "string" ? r.cover_photo.trim() : "";
   let cover_photo: string | null = null;
   if (coverRaw) {
-    let u: URL | null = null;
-    try {
-      u = new URL(coverRaw);
-    } catch {
-      u = null;
-    }
-    if (!u || u.protocol !== "https:" || !coverRaw.startsWith("https://") || coverRaw.length > 2000) {
-      return bad("대표 사진 주소는 https:// 로 시작해야 해요");
-    }
+    if (!isAllowedPhotoUrl(coverRaw, supabaseUrl)) return bad("대표 사진은 「대표 사진」 칸에서 올린 것만 쓸 수 있어요");
     cover_photo = coverRaw;
   }
 
@@ -429,7 +423,7 @@ export function parseStoryInput(raw: unknown): Parsed<StoryRow> {
     tags = STORY_TAGS.filter((x) => given.includes(x));
   }
 
-  const blocks = parseStoryBlocks(r.blocks ?? []);
+  const blocks = parseStoryBlocks(r.blocks ?? [], supabaseUrl);
   if (!blocks.ok) return blocks;
 
   return ok({

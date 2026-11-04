@@ -1,5 +1,6 @@
 import { isUuid, type Parsed } from "./admin-input";
 import { isOpenNow } from "./hours";
+import { isAllowedPhotoUrl } from "./story-photos";
 import type { Activity, Place, StoryBlock } from "./types";
 
 // 이야기 본문 블록 — 입력 검사, 들른 곳(stop) 대상 모으기·현재 값으로 풀기.
@@ -8,7 +9,6 @@ import type { Activity, Place, StoryBlock } from "./types";
 export const MAX_BLOCKS = 60;
 const MAX_TEXT = 4000;
 const MAX_NOTE = 200;
-const MAX_URL = 2000;
 
 type StopBlock = Extract<StoryBlock, { t: "stop" }>;
 
@@ -36,16 +36,11 @@ function req(v: unknown, max: number, what: string): string {
   return s;
 }
 
-function httpsUrl(v: unknown): string {
-  if (typeof v !== "string" || v.length > MAX_URL) throw new BlockError("사진 주소는 https:// 로 시작해야 해요");
-  const s = v.trim();
-  let u: URL;
-  try {
-    u = new URL(s);
-  } catch {
-    throw new BlockError("사진 주소는 https:// 로 시작해야 해요");
-  }
-  if (u.protocol !== "https:" || !s.startsWith("https://")) throw new BlockError("사진 주소는 https:// 로 시작해야 해요");
+/** 사진 주소 — 이 관리 화면에서 올린 사진(Supabase Storage 공개 주소)만 받는다 */
+const PHOTO_URL_ERR = "사진은 「사진 올리기」로 올린 것만 쓸 수 있어요";
+function photoUrl(v: unknown, supabaseUrl: string): string {
+  const s = typeof v === "string" ? v.trim() : v;
+  if (!isAllowedPhotoUrl(s, supabaseUrl)) throw new BlockError(PHOTO_URL_ERR);
   return s;
 }
 
@@ -54,7 +49,7 @@ function idOrNull(v: unknown): string | null | undefined {
   return isUuid(v) ? v : undefined; // undefined = 잘못된 값
 }
 
-function parseBlock(raw: unknown, i: number): StoryBlock {
+function parseBlock(raw: unknown, i: number, supabaseUrl: string): StoryBlock {
   const r = rec(raw);
   const at = `${i + 1}번째 블록`;
   switch (r.t) {
@@ -64,7 +59,7 @@ function parseBlock(raw: unknown, i: number): StoryBlock {
     case "photo":
       return {
         t: "photo",
-        url: httpsUrl(r.url),
+        url: photoUrl(r.url, supabaseUrl),
         caption_ko: opt(r.caption_ko, MAX_NOTE, `${at} 사진 설명`),
         caption_en: opt(r.caption_en, MAX_NOTE, `${at} 사진 설명(영문)`),
       };
@@ -90,12 +85,15 @@ function parseBlock(raw: unknown, i: number): StoryBlock {
   }
 }
 
-/** 브라우저가 보낸 블록 배열을 검사해 정돈된 StoryBlock[] 로 바꾼다 */
-export function parseStoryBlocks(raw: unknown): Parsed<StoryBlock[]> {
+/**
+ * 브라우저가 보낸 블록 배열을 검사해 정돈된 StoryBlock[] 로 바꾼다.
+ * supabaseUrl: 사진 블록 주소의 허용 기준(NEXT_PUBLIC_SUPABASE_URL). 비면 사진 블록은 전부 거절된다.
+ */
+export function parseStoryBlocks(raw: unknown, supabaseUrl: string): Parsed<StoryBlock[]> {
   if (!Array.isArray(raw)) return bad("본문 형식이 잘못됐어요");
   if (raw.length > MAX_BLOCKS) return bad(`본문 블록은 ${MAX_BLOCKS}개까지예요`);
   try {
-    return ok(raw.map(parseBlock));
+    return ok(raw.map((b, i) => parseBlock(b, i, supabaseUrl)));
   } catch (e) {
     if (e instanceof BlockError) return bad(e.message);
     throw e;

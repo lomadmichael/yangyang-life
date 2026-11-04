@@ -172,14 +172,16 @@ const validStory = {
   review_note: "몰래",
 };
 
+const SB = "https://proj.supabase.co";
+
 describe("parseStoryInput", () => {
   it("가이드는 주제 필수 (plan)", () => {
-    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: null }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, type: "course", guide_topic: "surf" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: null }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "course", guide_topic: "surf" }, SB).ok).toBe(false);
   });
 
   it("정상 입력 → 정돈된 행. 작성자·상태·샘플·공개일·메모는 받지 않는다", () => {
-    const r = parseStoryInput(validStory);
+    const r = parseStoryInput(validStory, SB);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value).toEqual({
@@ -204,47 +206,50 @@ describe("parseStoryInput", () => {
   });
 
   it("가이드 주제는 놀거리·장소 분류 키만", () => {
-    const g = parseStoryInput({ ...validStory, type: "guide", guide_topic: "surf" });
+    const g = parseStoryInput({ ...validStory, type: "guide", guide_topic: "surf" }, SB);
     expect(g.ok && g.value.guide_topic).toBe("surf");
-    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "spot" }).ok).toBe(true);
-    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "casino" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, type: "news" }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "spot" }, SB).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, type: "guide", guide_topic: "casino" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, type: "news" }, SB).ok).toBe(false);
   });
 
   it("제목 1~80자, 요약 140자까지", () => {
-    expect(parseStoryInput({ ...validStory, title_ko: "  " }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(80) }).ok).toBe(true);
-    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(81) }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, title_en: "a".repeat(81) }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(140) }).ok).toBe(true);
-    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(141) }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, summary_en: "a".repeat(141) }).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, title_ko: "  " }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(80) }, SB).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, title_ko: "가".repeat(81) }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, title_en: "a".repeat(81) }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(140) }, SB).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, summary_ko: "가".repeat(141) }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, summary_en: "a".repeat(141) }, SB).ok).toBe(false);
   });
 
   it("slug: 장소와 같은 규칙. 비우면 영문 제목에서 제안, 그것도 없으면 null(서버가 채움)", () => {
-    expect(parseStoryInput({ ...validStory, slug: "Bad Slug" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, slug: "a".repeat(61) }).ok).toBe(false);
-    const fromEn = parseStoryInput({ ...validStory, slug: "", title_en: "A Rainy Day in Hyeonnam" });
+    expect(parseStoryInput({ ...validStory, slug: "Bad Slug" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, slug: "a".repeat(61) }, SB).ok).toBe(false);
+    const fromEn = parseStoryInput({ ...validStory, slug: "", title_en: "A Rainy Day in Hyeonnam" }, SB);
     expect(fromEn.ok && fromEn.value.slug).toBe("a-rainy-day-in-hyeonnam");
-    const none = parseStoryInput({ ...validStory, slug: "" });
+    const none = parseStoryInput({ ...validStory, slug: "" }, SB);
     expect(none.ok && none.value.slug).toBe(null);
   });
 
-  it("태그는 5종만, 다녀온 날은 실제 날짜, 대표 사진은 https", () => {
-    expect(parseStoryInput({ ...validStory, tags: ["solo", "vip"] }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, tags: "solo" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, visited_on: "2026-02-30" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, visited_on: "" }).ok).toBe(true);
-    expect(parseStoryInput({ ...validStory, cover_photo: "http://x.test/a.jpg" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, cover_photo: "javascript:alert(1)" }).ok).toBe(false);
-    const c = parseStoryInput({ ...validStory, cover_photo: "https://x.test/a.jpg" });
-    expect(c.ok && c.value.cover_photo).toBe("https://x.test/a.jpg");
+  it("태그는 5종만, 다녀온 날은 실제 날짜, 대표 사진은 우리 Storage 주소만", () => {
+    expect(parseStoryInput({ ...validStory, tags: ["solo", "vip"] }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, tags: "solo" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, visited_on: "2026-02-30" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, visited_on: "" }, SB).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, cover_photo: "http://x.test/a.jpg" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, cover_photo: "javascript:alert(1)" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, cover_photo: "https://x.test/a.jpg" }, SB).ok).toBe(false);
+    const cover = `${SB}/storage/v1/object/public/place-photos/stories/s1/c.jpg`;
+    const c = parseStoryInput({ ...validStory, cover_photo: ` ${cover} ` }, SB);
+    expect(c.ok && c.value.cover_photo).toBe(cover);
+    expect(parseStoryInput({ ...validStory, cover_photo: cover }, "").ok).toBe(false);
   });
 
   it("본문은 parseStoryBlocks 규칙 그대로", () => {
-    expect(parseStoryInput({ ...validStory, blocks: [{ t: "stop", place_id: STOP_PLACE, activity_id: STOP_PLACE }] }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, blocks: [{ t: "photo", url: "" }] }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, blocks: "x" }).ok).toBe(false);
-    expect(parseStoryInput({ ...validStory, blocks: [] }).ok).toBe(true);
+    expect(parseStoryInput({ ...validStory, blocks: [{ t: "stop", place_id: STOP_PLACE, activity_id: STOP_PLACE }] }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: [{ t: "photo", url: "" }] }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: "x" }, SB).ok).toBe(false);
+    expect(parseStoryInput({ ...validStory, blocks: [] }, SB).ok).toBe(true);
   });
 });

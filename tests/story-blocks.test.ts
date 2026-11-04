@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseStoryBlocks, resolveStops, savablePlaceIds, stopTargets, stopView, storyNeedsCheck } from "../src/lib/story-blocks";
+
+const SB = "https://proj.supabase.co";
+const PHOTO = `${SB}/storage/v1/object/public/place-photos/stories/s1/a.jpg`;
 import type { Activity, Place, StoryBlock } from "../src/lib/types";
 
 const UUID = "11111111-1111-4111-8111-111111111111";
@@ -80,39 +83,48 @@ const stop = (p: Partial<Extract<StoryBlock, { t: "stop" }>>): StoryBlock => ({
 
 describe("parseStoryBlocks", () => {
   it("stop 은 place_id/activity_id 중 정확히 하나", () => {
-    expect(parseStoryBlocks([{ t: "stop", place_id: UUID, activity_id: UUID2 }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "stop", place_id: null, activity_id: null }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "photo", url: "http://x" }]).ok).toBe(false);
-    expect(parseStoryBlocks(Array(61).fill({ t: "text", ko: "a" })).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "stop", place_id: UUID, activity_id: UUID2 }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "stop", place_id: null, activity_id: null }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "photo", url: "http://x" }], SB).ok).toBe(false);
+    expect(parseStoryBlocks(Array(61).fill({ t: "text", ko: "a" }), SB).ok).toBe(false);
   });
   it("정상 블록은 빈 칸을 null 로 채워 돌려준다", () => {
-    const r = parseStoryBlocks([
-      { t: "heading", ko: " 아침 " },
-      { t: "text", ko: "본문", en: "Body" },
-      { t: "photo", url: "https://example.com/a.jpg", caption_ko: "바다" },
-      { t: "stop", place_id: UUID, note_ko: "메밀국수" },
-    ]);
+    const r = parseStoryBlocks(
+      [
+        { t: "heading", ko: " 아침 " },
+        { t: "text", ko: "본문", en: "Body" },
+        { t: "photo", url: ` ${PHOTO} `, caption_ko: "바다" },
+        { t: "stop", place_id: UUID, note_ko: "메밀국수" },
+      ],
+      SB,
+    );
     expect(r).toEqual({
       ok: true,
       value: [
         { t: "heading", ko: "아침", en: null },
         { t: "text", ko: "본문", en: "Body" },
-        { t: "photo", url: "https://example.com/a.jpg", caption_ko: "바다", caption_en: null },
+        { t: "photo", url: PHOTO, caption_ko: "바다", caption_en: null },
         stop({ place_id: UUID, note_ko: "메밀국수" }),
       ],
     });
-    expect(parseStoryBlocks(Array(60).fill({ t: "text", ko: "a" })).ok).toBe(true);
+    expect(parseStoryBlocks(Array(60).fill({ t: "text", ko: "a" }), SB).ok).toBe(true);
   });
   it("길이·형식 검사", () => {
-    expect(parseStoryBlocks("x").ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "video" }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "text", ko: "  " }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "text", ko: "a".repeat(4001) }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "text", ko: "a".repeat(4000) }]).ok).toBe(true);
-    expect(parseStoryBlocks([{ t: "stop", place_id: "not-uuid" }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "stop", activity_id: UUID, note_ko: "a".repeat(201) }]).ok).toBe(false);
-    expect(parseStoryBlocks([{ t: "stop", activity_id: UUID, time_en: "a".repeat(200) }]).ok).toBe(true);
-    expect(parseStoryBlocks([{ t: "photo", url: "javascript:alert(1)" }]).ok).toBe(false);
+    expect(parseStoryBlocks("x", SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "video" }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "text", ko: "  " }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "text", ko: "a".repeat(4001) }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "text", ko: "a".repeat(4000) }], SB).ok).toBe(true);
+    expect(parseStoryBlocks([{ t: "stop", place_id: "not-uuid" }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "stop", activity_id: UUID, note_ko: "a".repeat(201) }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "stop", activity_id: UUID, time_en: "a".repeat(200) }], SB).ok).toBe(true);
+    expect(parseStoryBlocks([{ t: "photo", url: "javascript:alert(1)" }], SB).ok).toBe(false);
+  });
+  it("사진 블록은 우리 Supabase Storage 공개 주소만 (다른 https 호스트·빈 기준 거절)", () => {
+    expect(parseStoryBlocks([{ t: "photo", url: PHOTO }], SB).ok).toBe(true);
+    expect(parseStoryBlocks([{ t: "photo", url: "https://example.com/a.jpg" }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "photo", url: "https://evil.test/storage/v1/object/public/place-photos/a.jpg" }], SB).ok).toBe(false);
+    expect(parseStoryBlocks([{ t: "photo", url: PHOTO }], "").ok).toBe(false);
   });
 });
 
