@@ -127,6 +127,7 @@ export default async function StoryAdminPage({ params }: PageProps<"/admin/stori
           previewActivities={previewActivities}
           aiEnabled={translationAvailable()}
           authorLine={`글: ${author}`}
+          nowIso={new Date().toISOString()}
           startInPreview={reviewer && story.status === "review"}
         />
       ) : (

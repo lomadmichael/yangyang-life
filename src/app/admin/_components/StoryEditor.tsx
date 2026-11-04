@@ -41,6 +41,7 @@ function optionCategoryKo(kind: "place" | "activity", category: string): string 
  * 이야기 쓰기 (F33). 기본 카드 → 본문 블록 쌓기 → 아래 고정 「초안 저장」「검토 요청」.
  * 미리보기는 공개 화면의 StoryBody 를 그대로 쓴다(들른 곳은 공개 뷰에서 읽은 지금 값으로).
  * 권한·상태는 서버(saveStory)가 다시 정한다 — 여기의 status·role 은 버튼 문구를 고르는 데만 쓴다.
+ * nowIso: 서버 페이지가 정한 「지금」. 미리보기의 영업 중 배지가 서버 그리기·브라우저 그리기에서 같게(SSR 불일치 방지).
  */
 export function StoryEditor({
   storyId,
@@ -54,6 +55,7 @@ export function StoryEditor({
   aiEnabled,
   authorLine,
   startInPreview = false,
+  nowIso,
 }: {
   storyId: string | null;
   initial: StoryFormValues;
@@ -66,6 +68,7 @@ export function StoryEditor({
   aiEnabled: boolean;
   authorLine?: string;
   startInPreview?: boolean;
+  nowIso: string;
 }) {
   const router = useRouter();
   const [v, setV] = useState<StoryFormValues>(initial);
@@ -167,6 +170,7 @@ export function StoryEditor({
           places={previewPlaces}
           activities={previewActivities}
           authorLine={authorLine}
+          nowIso={nowIso}
         />
       ) : (
         <>
@@ -608,6 +612,7 @@ function StoryPreview({
   places,
   activities,
   authorLine,
+  nowIso,
 }: {
   v: StoryFormValues;
   lang: Lang;
@@ -615,7 +620,9 @@ function StoryPreview({
   places: Place[];
   activities: Activity[];
   authorLine?: string;
+  nowIso: string;
 }) {
+  const now = useMemo(() => new Date(nowIso), [nowIso]);
   const blocks = useMemo(() => valuesToPreviewBlocks(v.blocks), [v.blocks]);
   const resolved = useMemo(
     () =>
@@ -674,7 +681,7 @@ function StoryPreview({
           {tags.length ? <p className="text-sm text-muted">{tags.join(" · ")}</p> : null}
         </header>
         {blocks.length ? (
-          <StoryBody blocks={blocks} resolved={resolved} lang={lang} numbered={v.type !== "guide"} />
+          <StoryBody blocks={blocks} resolved={resolved} lang={lang} numbered={v.type !== "guide"} now={now} />
         ) : (
           <p className="text-sm text-muted">본문이 아직 없어요.</p>
         )}

@@ -33,6 +33,7 @@ export default async function NewStoryPage() {
         previewActivities={previewActivities}
         aiEnabled={translationAvailable()}
         authorLine={`글: ${admin.display_name}`}
+        nowIso={new Date().toISOString()}
       />
     </>
   );
