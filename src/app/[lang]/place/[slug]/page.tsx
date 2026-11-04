@@ -17,6 +17,7 @@ import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
 import { photoUrl } from "@/lib/format";
 import { isOpenNow } from "@/lib/hours";
+import { placeActivities } from "@/lib/play";
 import { AMENITY_KEY, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
 import { getPlaceBySlug, listActivities, listStoriesMentioning } from "@/lib/queries";
 import type { Activity, Story } from "@/lib/types";
@@ -51,8 +52,10 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   const place = await getPlaceBySlug(slug);
   if (!place) notFound();
 
-  const [stories, activities] = await Promise.all([storiesFor(place.id), activitiesAt(place.id)]);
+  const [stories, activitiesHere] = await Promise.all([storiesFor(place.id), activitiesAt(place.id)]);
   const now = new Date();
+  // 끝난 기간 행사는 빼고, 비시즌(서울 이번 달 기준)은 뒤로 보내 흐리게
+  const activities = placeActivities(activitiesHere, now);
   const categoryKey = CATEGORY_KEY[place.category];
   const amenities = place.amenities ?? [];
   const row = place as unknown as Record<string, unknown>;
@@ -175,9 +178,9 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
         <section className="flex flex-col gap-3">
           <h2 className="font-bold">{t(lang, "placeActivitiesTitle")}</h2>
           <ul className="flex flex-col gap-3">
-            {activities.map((a) => (
+            {activities.map(({ activity: a, offSeason }) => (
               <li key={a.id}>
-                <ActivityCard activity={a} lang={lang} />
+                <ActivityCard activity={a} lang={lang} dimmed={offSeason} />
               </li>
             ))}
           </ul>

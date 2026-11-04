@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupPlay, inSeason } from "../src/lib/play";
+import { activityEnded, groupPlay, inSeason, placeActivities } from "../src/lib/play";
 import type { Activity } from "../src/lib/types";
 
 function act(p: Partial<Activity> & { id: string }): Activity {
@@ -82,5 +82,31 @@ describe("groupPlay", () => {
     const g = groupPlay([off], now, {});
     expect(ids(g.dated)).toEqual([]);
     expect(ids(g.offSeason)).toEqual(["festival-off"]);
+  });
+});
+
+describe("장소 상세 놀거리 (placeActivities)", () => {
+  // 서울 2026-06-01 = UTC 05-31 16:00
+  const now = new Date("2026-05-31T16:00:00Z");
+  it("끝난 기간 행사 판정은 서울 오늘 기준", () => {
+    expect(activityEnded(act({ id: "a", kind: "dated", starts_on: "2026-05-01", ends_on: "2026-05-31" }), now)).toBe(true);
+    expect(activityEnded(act({ id: "b", kind: "dated", starts_on: "2026-06-01", ends_on: null }), now)).toBe(false);
+    expect(activityEnded(act({ id: "c", kind: "always", ends_on: "2026-01-01" }), now)).toBe(false);
+  });
+  it("끝난 행사는 빼고, 비시즌은 뒤로", () => {
+    const got = placeActivities(
+      [
+        act({ id: "winter", season_months: [11, 12, 1] }),
+        act({ id: "ended", kind: "dated", starts_on: "2026-05-01", ends_on: "2026-05-20" }),
+        act({ id: "all" }),
+        act({ id: "summer", season_months: [6, 7, 8] }),
+      ],
+      now,
+    );
+    expect(got.map((x) => [x.activity.id, x.offSeason])).toEqual([
+      ["all", false],
+      ["summer", false],
+      ["winter", true],
+    ]);
   });
 });

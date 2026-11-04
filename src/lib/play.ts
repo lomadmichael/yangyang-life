@@ -9,6 +9,23 @@ export function inSeason(a: Pick<Activity, "season_months">, now: Date): boolean
   return a.season_months.includes(month);
 }
 
+/** 이미 끝난 기간 행사인가 — dated 이고 마지막 날(끝나는 날, 없으면 시작일)이 서울 오늘보다 앞 */
+export function activityEnded(a: Pick<Activity, "kind" | "starts_on" | "ends_on">, now: Date): boolean {
+  const lastDay = a.ends_on ?? a.starts_on;
+  return a.kind === "dated" && !!lastDay && lastDay < seoulParts(now).ymd;
+}
+
+/**
+ * 장소 상세 「여기서 할 수 있는 놀거리」: 끝난 기간 행사는 빼고, 비시즌은 뒤로(offSeason=true → 흐리게).
+ * 같은 묶음 안의 순서는 들어온 순서 그대로.
+ */
+export function placeActivities(list: Activity[], now: Date): { activity: Activity; offSeason: boolean }[] {
+  const live = list.filter((a) => !activityEnded(a, now));
+  // 0003 적용 전 DB 에는 season_months 칸이 없을 수 있다 → 사계절로 본다
+  const tagged = live.map((a) => ({ activity: a, offSeason: !inSeason({ season_months: a.season_months ?? [] }, now) }));
+  return [...tagged.filter((x) => !x.offSeason), ...tagged.filter((x) => x.offSeason)];
+}
+
 /**
  * 놀거리 목록 묶기: 오늘(서울) 볼 수 있는 것(activitiesForDay) → 분류로 거름 → 계절 밖은 offSeason 으로.
  * dated 도 계절 밖이면 offSeason. 각 묶음 안의 순서는 activitiesForDay 순서 그대로.

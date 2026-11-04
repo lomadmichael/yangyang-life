@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { can } from "@/lib/permissions";
 import { sampleValues } from "@/lib/samples";
-import { STALE_DAYS } from "@/lib/stale";
+import { STALE_DAYS, activityNeedsRecheck } from "@/lib/stale";
 import { serviceClient } from "@/lib/supabase";
 import { requireAdmin } from "./auth";
 import { countStoriesAdmin } from "./data";
@@ -23,11 +23,8 @@ export default async function AdminHome() {
       .in("is_sample", samples)
       .neq("status", "closed")
       .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
-    db
-      .from("activities")
-      .select("id", { count: "exact", head: true })
-      .in("is_sample", samples)
-      .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
+    // 개수는 재확인 목록과 같은 판정(activityNeedsRecheck — 끝난 기간 행사 제외)으로 센다
+    db.from("activities").select("id,kind,starts_on,ends_on,verified_at").in("is_sample", samples),
     db
       .from("tips")
       .select("id", { count: "exact", head: true })
@@ -38,6 +35,8 @@ export default async function AdminHome() {
     db.from("activities").select("id", { count: "exact", head: true }).in("is_sample", samples),
   ]);
   for (const r of [stale, staleActivities, changed, places, activities]) if (r.error) throw new Error(r.error.message);
+  type RecheckRow = Parameters<typeof activityNeedsRecheck>[0];
+  const staleActivityCount = ((staleActivities.data ?? []) as RecheckRow[]).filter((a) => activityNeedsRecheck(a, now)).length;
 
   // 이야기 카드: 검토 대기(편집 이상) · 돌려받은 내 이야기(누구나 — 자기 글)
   const reviewer = can(admin.role, "publish_story");
@@ -57,8 +56,8 @@ export default async function AdminHome() {
         </Link>
         <Link href="/admin/activities" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
           <p className="text-sm text-muted">확인 {STALE_DAYS}일 지난 할 거리</p>
-          <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{staleActivities.count ?? 0}</p>
-          <p className="mt-1 text-xs text-muted">확인 기록 없는 것 포함</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{staleActivityCount}</p>
+          <p className="mt-1 text-xs text-muted">끝난 행사 제외 · 확인 기록 없는 것 포함</p>
         </Link>
         <Link href="/admin/tips" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
           <p className="text-sm text-muted">새 「바뀌었어요」 팁</p>

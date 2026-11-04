@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CATEGORY_KO } from "@/lib/admin-input";
-import { seoulParts } from "@/lib/hours";
+import { formatVerifiedDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { sampleValues } from "@/lib/samples";
-import { GUIDE_STALE_DAYS, STALE_DAYS, isStale } from "@/lib/stale";
+import { GUIDE_STALE_DAYS, STALE_DAYS, activityNeedsRecheck, isStale } from "@/lib/stale";
 import { resolveStops, storyNeedsCheck } from "@/lib/story-blocks";
 import type { Activity, Place } from "@/lib/types";
 import { requireAdmin } from "../auth";
@@ -35,7 +35,6 @@ interface StaleData {
 
 async function loadStale(now: Date): Promise<StaleData> {
   const samples = sampleValues();
-  const today = seoulParts(now).ymd;
   const [allPlaces, allActivities, allStories, names] = await Promise.all([
     listPlacesAdmin(),
     listActivitiesAdmin(),
@@ -48,12 +47,8 @@ async function loadStale(now: Date): Promise<StaleData> {
   const stories = allStories.filter((s) => samples.includes(s.is_sample));
 
   const places = placesVisible.filter((p) => p.status !== "closed" && isStale(p.verified_at, now));
-  const activities = activitiesVisible.filter((a) => {
-    // 이미 끝난 기간 행사는 다시 확인할 필요가 없다
-    const lastDay = a.ends_on ?? a.starts_on;
-    if (a.kind === "dated" && lastDay && lastDay < today) return false;
-    return isStale(a.verified_at, now);
-  });
+  // 이미 끝난 기간 행사는 다시 확인할 필요가 없다 — 관리 홈 개수와 같은 판정
+  const activities = activitiesVisible.filter((a) => activityNeedsRecheck(a, now));
   // 가이드는 확인일이 없으면 공개일부터 센다(공개 = 검토를 거친 날)
   const guides = stories.filter(
     (s) => s.type === "guide" && isStale(s.verified_at ?? s.published_at, now, GUIDE_STALE_DAYS),
@@ -186,8 +181,8 @@ export default async function StalePage() {
                     </span>
                     <span className="text-xs text-muted">
                       {s.verified_at
-                        ? `마지막 확인 ${s.verified_at.slice(0, 10)}`
-                        : `확인 기록 없음 · 공개 ${s.published_at?.slice(0, 10) ?? "날짜 없음"}`}
+                        ? `마지막 확인 ${formatVerifiedDate(s.verified_at, "ko")}`
+                        : `확인 기록 없음 · 공개 ${formatVerifiedDate(s.published_at, "ko") || "날짜 없음"}`}
                     </span>
                   </li>
                 ))}
