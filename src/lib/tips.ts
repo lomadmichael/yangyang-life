@@ -3,6 +3,20 @@
 export const TIP_KINDS = ["changed", "tip", "directions"] as const;
 export type TipKind = (typeof TIP_KINDS)[number];
 
+/** 팁을 달 수 있는 대상 — 가게·놀거리·이야기 */
+export const TIP_TARGETS = ["place", "activity", "story"] as const;
+export type TipTarget = (typeof TIP_TARGETS)[number];
+
+export function isTipTarget(v: unknown): v is TipTarget {
+  return typeof v === "string" && (TIP_TARGETS as readonly string[]).includes(v);
+}
+
+/**
+ * 기기 식별 쿠키 이름 — 팁 쓰기·신고(tips/actions.ts)와 MY 「내가 남긴 팁」(my/actions.ts)이 같이 쓴다.
+ * "use server" 파일은 async 함수만 내보낼 수 있어 상수는 여기 둔다. 값(기기 ID)은 로그·응답에 내보내지 않는다.
+ */
+export const DEVICE_COOKIE = "yl_did";
+
 export const NICKNAME_MAX = 20;
 export const BODY_MIN = 2;
 export const BODY_MAX = 500;
@@ -14,9 +28,11 @@ export const POST_DAY_LIMIT = 10;
 /** 서로 다른 기기 신고가 이만큼 모이면 자동 숨김 */
 export const REPORT_HIDE_AT = 3;
 
-export type TipRejectReason = "length" | "link" | "phone" | "kind" | "nickname";
+export type TipRejectReason = "target" | "length" | "link" | "phone" | "kind" | "nickname";
 
 export interface TipInput {
+  /** 대상 종류 — 주면 TIP_TARGETS 안인지 본다(서버 액션은 항상 준다) */
+  target_type?: TipTarget;
   kind: TipKind;
   body: string;
   nickname: string;
@@ -62,8 +78,9 @@ export function hasPhone(text: string): boolean {
   return PHONE_RE.test(s) || REP_PHONE_RE.test(s);
 }
 
-/** 검사 순서: 종류 → 닉네임 → 길이 → 링크 → 전화 */
+/** 검사 순서: 대상 → 종류 → 닉네임 → 길이 → 링크 → 전화 */
 export function validateTip(input: TipInput): { ok: true } | { ok: false; reason: TipRejectReason } {
+  if (input.target_type !== undefined && !isTipTarget(input.target_type)) return { ok: false, reason: "target" };
   if (!isTipKind(input.kind)) return { ok: false, reason: "kind" };
   const nickname = typeof input.nickname === "string" ? input.nickname.trim() : "";
   if (nickname.length < 1 || nickname.length > NICKNAME_MAX) return { ok: false, reason: "nickname" };

@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CATEGORY_KO, STATUS_KO, suggestSlug } from "@/lib/admin-input";
+import { AMENITY_KO, CATEGORY_KO, NON_DINING_CATEGORIES, STATUS_KO, suggestSlug } from "@/lib/admin-input";
+import { AMENITIES } from "@/lib/labels";
+import type { Place } from "@/lib/types";
 import { savePlace } from "../actions";
 import { BilingualField } from "./BilingualField";
 import { HoursEditor } from "./HoursEditor";
@@ -45,6 +47,9 @@ export function PlaceForm({
     else set("lat", raw);
   }
 
+  // 해변·명소, 생활 편의: 가격대를 숨기고 편의를 보인다. 숨긴 칸 값은 그대로 두었다가 같이 저장한다(기본값 유지)
+  const nonDining = NON_DINING_CATEGORIES.includes(v.category as Place["category"]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setResult(null);
@@ -74,7 +79,7 @@ export function PlaceForm({
         <Field label="로마자 이름 (간판 읽는 법)" hint="예: Hyeonnam Makguksu — 외국인이 간판을 찾을 때 씀">
           <input name="name_roman" value={v.name_roman} onChange={(e) => set("name_roman", e.target.value)} lang="en" className={inputCls} />
         </Field>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={nonDining ? "grid grid-cols-1 gap-2" : "grid grid-cols-2 gap-2"}>
           <Field label="종류">
             <select name="category" value={v.category} onChange={(e) => set("category", e.target.value)} className={inputCls}>
               {Object.entries(CATEGORY_KO).map(([k, label]) => (
@@ -84,13 +89,15 @@ export function PlaceForm({
               ))}
             </select>
           </Field>
-          <Field label="가격대">
-            <select name="price_level" value={v.price_level} onChange={(e) => set("price_level", e.target.value)} className={inputCls}>
-              <option value="1">₩ 저렴</option>
-              <option value="2">₩₩ 보통</option>
-              <option value="3">₩₩₩ 비쌈</option>
-            </select>
-          </Field>
+          {nonDining ? null : (
+            <Field label="가격대">
+              <select name="price_level" value={v.price_level} onChange={(e) => set("price_level", e.target.value)} className={inputCls}>
+                <option value="1">₩ 저렴</option>
+                <option value="2">₩₩ 보통</option>
+                <option value="3">₩₩₩ 비쌈</option>
+              </select>
+            </Field>
+          )}
         </div>
         <Field label="상태" hint="참여 가게 = 사장님이 동의한 곳. 사진·영어 메뉴판은 참여 가게만 공개돼요.">
           <select name="status" value={v.status} onChange={(e) => set("status", e.target.value)} className={inputCls}>
@@ -157,6 +164,26 @@ export function PlaceForm({
             </select>
           </Field>
         </div>
+        {nonDining ? (
+          <fieldset>
+            <legend className="mb-1 text-sm font-medium">편의 시설</legend>
+            <div className="flex flex-wrap gap-x-4">
+              {AMENITIES.map((a) => (
+                <label key={a} className="inline-flex min-h-11 items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={v.amenities.includes(a)}
+                    onChange={(e) =>
+                      set("amenities", e.target.checked ? [...v.amenities, a] : v.amenities.filter((x) => x !== a))
+                    }
+                    className="size-5"
+                  />
+                  {AMENITY_KO[a]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
       </Card>
 
       <Card title="주소 이름">

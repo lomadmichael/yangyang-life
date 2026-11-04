@@ -1,20 +1,43 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import { ActivityCard } from "@/components/ActivityCard";
 import { BackLink } from "@/components/BackLink";
 import { Badge } from "@/components/Badge";
 import { FallbackNote } from "@/components/FallbackNote";
 import { HoursTable } from "@/components/HoursTable";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
+import { isAmenityCategory } from "@/components/PlaceCard";
+import { SaveButton } from "@/components/SaveButton";
 import { SafeImage } from "@/components/SafeImage";
+import { StoryCard } from "@/components/StoryCard";
 import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
 import { photoUrl } from "@/lib/format";
 import { isOpenNow } from "@/lib/hours";
-import { CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
-import { getPlaceBySlug } from "@/lib/queries";
+import { placeActivities } from "@/lib/play";
+import { AMENITY_KEY, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
+import { getPlaceBySlug, listActivities, listStoriesMentioning } from "@/lib/queries";
+import type { Activity, Story } from "@/lib/types";
+
+// 아래 두 묶음은 곁가지 — 조회가 실패해도(예: 0003 적용 전 stories_public 없음) 상세 화면은 그대로 보여 준다
+async function storiesFor(placeId: string): Promise<Story[]> {
+  try {
+    return await listStoriesMentioning("place", placeId);
+  } catch {
+    return [];
+  }
+}
+
+async function activitiesAt(placeId: string): Promise<Activity[]> {
+  try {
+    return (await listActivities()).filter((a) => a.place_id === placeId);
+  } catch {
+    return [];
+  }
+}
 
 function yesNo(lang: Lang, v: boolean | null): string {
   const key: DictKey = v === null ? "unknown" : v ? "yes" : "no";
@@ -29,7 +52,12 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   const place = await getPlaceBySlug(slug);
   if (!place) notFound();
 
+  const [stories, activitiesHere] = await Promise.all([storiesFor(place.id), activitiesAt(place.id)]);
   const now = new Date();
+  // 끝난 기간 행사는 빼고, 비시즌(서울 이번 달 기준)은 뒤로 보내 흐리게
+  const activities = placeActivities(activitiesHere, now);
+  const categoryKey = CATEGORY_KEY[place.category];
+  const amenities = place.amenities ?? [];
   const row = place as unknown as Record<string, unknown>;
   const name = pickText(row, "name", lang);
   const summary = pickText(row, "summary", lang);
@@ -41,7 +69,10 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
-      <BackLink href={`/${lang}/eat`} label={t(lang, "eatTitle")} />
+      <div className="flex items-center justify-between gap-3">
+        <BackLink href={`/${lang}/places`} label={t(lang, "placesTitle")} />
+        <SaveButton kind="place" id={place.id} lang={lang} size="md" />
+      </div>
 
       {photos.length > 0 ? (
         <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 empty:hidden">
@@ -58,7 +89,7 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
-          <Badge tone="muted">{t(lang, CATEGORY_KEY[place.category])}</Badge>
+          {categoryKey ? <Badge tone="muted">{t(lang, categoryKey)}</Badge> : null}
           {closed ? (
             <Badge tone="closed">{t(lang, "statusClosed")}</Badge>
           ) : open ? (
@@ -102,11 +133,20 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
       </section>
 
       <dl className="rounded-2xl border border-line bg-surface px-4">
-        <InfoRow label={t(lang, "priceLabel")}>
-          {priceSymbol(place.price_level)} · {t(lang, PRICE_KEY[place.price_level])}
-        </InfoRow>
+        {isAmenityCategory(place.category) ? null : (
+          <InfoRow label={t(lang, "priceLabel")}>
+            {priceSymbol(place.price_level)} · {t(lang, PRICE_KEY[place.price_level])}
+          </InfoRow>
+        )}
         <InfoRow label={t(lang, "parking")}>{yesNo(lang, place.parking)}</InfoRow>
         <InfoRow label={t(lang, "foreignCard")}>{yesNo(lang, place.foreign_card)}</InfoRow>
+        {amenities.map((a) =>
+          AMENITY_KEY[a] ? (
+            <InfoRow key={a} label={t(lang, AMENITY_KEY[a])}>
+              {t(lang, "yes")}
+            </InfoRow>
+          ) : null,
+        )}
       </dl>
 
       {howTo.text ? (
@@ -120,6 +160,32 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
       ) : null}
 
       <VerifiedLine method={place.verified_method} at={place.verified_at} by={place.verified_by_name} lang={lang} />
+
+      {stories.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold">{t(lang, "placeStoriesTitle")}</h2>
+          <ul className="flex flex-col gap-2">
+            {stories.map((s) => (
+              <li key={s.id}>
+                <StoryCard story={s} lang={lang} size="sm" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {activities.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-bold">{t(lang, "placeActivitiesTitle")}</h2>
+          <ul className="flex flex-col gap-3">
+            {activities.map(({ activity: a, offSeason }) => (
+              <li key={a.id}>
+                <ActivityCard activity={a} lang={lang} dimmed={offSeason} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* 팁: 「바뀌었어요·꿀팁·가는 법」 목록 + 쓰기 폼 (<section id="tips">) */}
       <TipList lang={lang} targetType="place" targetId={place.id} />

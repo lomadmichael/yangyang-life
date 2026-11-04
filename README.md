@@ -3,6 +3,10 @@
 양양을 찾은 방문객에게 「오늘 뭐 하지 / 어디서 먹지」를 국문·영문으로 알려 주는 안내 웹앱입니다.
 양양군농업기술센터 지원 「Ai 내일바꿈 심화편」 참가자들이 함께 만듭니다. 운영 주소: https://yangyang.life
 
+## 화면
+홈 `/[lang]` · 장소 `/[lang]/places` · 놀거리 `/[lang]/play` · 이야기 `/[lang]/stories` · 내 저장·팁 `/[lang]/my` · 만든 사람들 `/[lang]/makers` (lang = ko / en).
+관리: `/admin` (이야기 `/admin/stories`, 검토 `/admin/review`, 오래된 정보 `/admin/stale`). 자세한 폴더 지도는 `CLAUDE.md`.
+
 ## 내 컴퓨터에서 실행 (3줄)
 Node **22.18 이상**이 필요합니다 (`node --version`으로 확인).
 ```

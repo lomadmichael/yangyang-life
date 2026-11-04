@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CATEGORY_KO } from "@/lib/admin-input";
+import { STALE_DAYS } from "@/lib/stale";
 import { requireAdmin } from "../auth";
 import { contributorNames, isStale, listPlacesAdmin } from "../data";
 import { VerifiedNote } from "../_components/VerifiedNote";
@@ -60,7 +61,7 @@ export default async function AdminPlaces({ searchParams }: PageProps<"/admin/pl
           aria-pressed={staleOnly}
           className={`rounded-full border px-3 py-1.5 ${staleOnly ? "border-sea bg-sea-soft text-sea" : "border-line bg-surface"}`}
         >
-          확인 30일 지남
+          확인 {STALE_DAYS}일 지남
         </Link>
       </div>
 

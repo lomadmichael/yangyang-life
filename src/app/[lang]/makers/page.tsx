@@ -3,8 +3,8 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { EmptyState } from "@/components/EmptyState";
-import { isLang, t } from "@/i18n";
-import { listContributors } from "@/lib/queries";
+import { isLang, t, tf } from "@/i18n";
+import { listContributors, listStories } from "@/lib/queries";
 import type { Contributor } from "@/lib/types";
 
 export default async function MakersPage({ params }: PageProps<"/[lang]/makers">) {
@@ -14,6 +14,13 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
 
   // 공개 뷰가 show=false 를 이미 빼지만, 화면에서도 한 번 더 거른다
   const people = (await listContributors()).filter((c) => c.show);
+  // 이야기 수: 한 번 읽어 author_id 로 센다 (실패하면 숫자만 생략)
+  const counts = new Map<string, number>();
+  try {
+    for (const s of await listStories()) if (s.author_id) counts.set(s.author_id, (counts.get(s.author_id) ?? 0) + 1);
+  } catch {
+    counts.clear();
+  }
   const other = t(lang, "makersOtherTeam");
   const teams = new Map<string, Contributor[]>();
   for (const c of people) {
@@ -41,7 +48,14 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
                   key={m.id}
                   className="flex items-baseline justify-between gap-3 border-b border-line py-3 last:border-b-0"
                 >
-                  <span className="font-medium">{m.display_name}</span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="font-medium">{m.display_name}</span>
+                    {counts.get(m.id) ? (
+                      <Link href={`/${lang}/stories?author=${m.id}`} className="text-sm font-medium text-sea underline">
+                        {tf(lang, "makersStories", { n: String(counts.get(m.id)) })}
+                      </Link>
+                    ) : null}
+                  </span>
                   <span className="text-right text-sm text-muted">
                     {[m.role_label, m.cohort].filter((v) => v && v.trim()).join(" · ")}
                   </span>
@@ -56,7 +70,7 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
         <h2 className="text-lg font-bold text-sea">{t(lang, "makersJoinTitle")}</h2>
         <p className="mt-1 text-sm">{t(lang, "makersJoinBody")}</p>
         <Link
-          href={`/${lang}/eat`}
+          href={`/${lang}/places`}
           className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea"
         >
           {t(lang, "makersJoinAction")}

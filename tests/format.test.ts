@@ -6,6 +6,7 @@ import {
   formatWeekdays,
   formatWon,
   photoUrl,
+  seasonLabel,
 } from "../src/lib/format";
 import { tf } from "../src/i18n";
 
@@ -68,5 +69,26 @@ describe("formatDateRange / formatToday", () => {
     const now = new Date("2026-11-14T01:00:00Z");
     expect(formatToday(now, "ko")).toBe("11월 14일 (토)");
     expect(formatToday(now, "en")).toBe("Sat, Nov 14");
+  });
+});
+
+describe("seasonLabel", () => {
+  it("연속된 달은 처음~끝", () => {
+    expect(seasonLabel([4, 5, 6, 7, 8, 9, 10], "ko")).toBe("4월~10월");
+    expect(seasonLabel([4, 5, 6, 7, 8, 9, 10], "en")).toBe("Apr–Oct");
+  });
+  it("해를 넘겨 이어지는 달도 한 구간", () => {
+    expect(seasonLabel([11, 12, 1, 2, 3], "ko")).toBe("11월~3월");
+    expect(seasonLabel([1, 2, 3, 11, 12], "en")).toBe("Nov–Mar");
+  });
+  it("떨어진 달은 쉼표로 나열", () => {
+    expect(seasonLabel([6, 8], "ko")).toBe("6월, 8월");
+    expect(seasonLabel([8, 6], "en")).toBe("Jun, Aug");
+  });
+  it("한 달·열두 달·빈 값", () => {
+    expect(seasonLabel([7], "ko")).toBe("7월");
+    expect(seasonLabel([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], "ko")).toBe("1월~12월");
+    expect(seasonLabel([], "ko")).toBeNull();
+    expect(seasonLabel([0, 13], "en")).toBeNull();
   });
 });

@@ -79,3 +79,33 @@ export function formatToday(now: Date, lang: Lang): string {
   }
   return new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short", month: "short", day: "numeric" }).format(now);
 }
+
+const MONTH_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function monthName(m: number, lang: Lang): string {
+  return lang === "ko" ? `${m}월` : MONTH_EN[m - 1];
+}
+
+/**
+ * 운영 계절: 이어진 달은 「4월~10월」/"Apr–Oct"(11·12·1월처럼 해를 넘겨도 한 구간),
+ * 떨어진 달은 「6월, 8월」/"Jun, Aug". 비었으면(= 사계절) null — 화면에서 줄을 그리지 않는다.
+ */
+export function seasonLabel(months: number[], lang: Lang): string | null {
+  const set = new Set(months.filter((m) => Number.isInteger(m) && m >= 1 && m <= 12));
+  if (set.size === 0) return null;
+  const sep = lang === "ko" ? "~" : "–";
+  if (set.size === 12) return `${monthName(1, lang)}${sep}${monthName(12, lang)}`;
+  const prev = (m: number) => (m === 1 ? 12 : m - 1);
+  const next = (m: number) => (m === 12 ? 1 : m + 1);
+  // 앞달이 비어 있는 달 = 구간의 시작. 시작이 하나뿐이면 한 구간이다
+  const starts = [...set].filter((m) => !set.has(prev(m)));
+  if (starts.length === 1 && set.size > 1) {
+    let end = starts[0];
+    while (set.has(next(end))) end = next(end);
+    return `${monthName(starts[0], lang)}${sep}${monthName(end, lang)}`;
+  }
+  return [...set]
+    .sort((a, b) => a - b)
+    .map((m) => monthName(m, lang))
+    .join(", ");
+}

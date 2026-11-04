@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { WEEKDAY_NUM_KO } from "@/lib/admin-input";
+import { MONTHS, PLAY_CATEGORY_KO, WEEKDAY_NUM_KO } from "@/lib/admin-input";
+import { PLAY_CATEGORIES } from "@/lib/labels";
+import type { PlayCategory } from "@/lib/types";
 import { saveActivity } from "../actions";
 import { BilingualField } from "./BilingualField";
 import type { ActivityFormValues } from "./activity-values";
@@ -61,6 +63,22 @@ export function ActivityForm({
             ))}
           </div>
         </Field>
+        <Field label="분류 *">
+          <select
+            name="category"
+            value={v.category}
+            onChange={(e) => set("category", e.target.value as PlayCategory | "")}
+            className={inputCls}
+            required
+          >
+            <option value="">— 골라 주세요 —</option>
+            {PLAY_CATEGORIES.map((k) => (
+              <option key={k} value={k}>
+                {PLAY_CATEGORY_KO[k]}
+              </option>
+            ))}
+          </select>
+        </Field>
         <BilingualField name="title" label="제목" required ko={v.title_ko} en={v.title_en} onKo={(x) => set("title_ko", x)} onEn={(x) => set("title_en", x)} aiEnabled={aiEnabled} />
         <BilingualField name="desc" label="설명" multiline ko={v.desc_ko} en={v.desc_en} onKo={(x) => set("desc_ko", x)} onEn={(x) => set("desc_en", x)} aiEnabled={aiEnabled} />
       </Card>
@@ -107,6 +125,32 @@ export function ActivityForm({
             </div>
           </>
         )}
+        <fieldset>
+          <legend className="mb-1 text-sm font-medium">운영 계절</legend>
+          <div className="grid grid-cols-6 gap-1.5">
+            {MONTHS.map((m) => {
+              const on = v.season_months.includes(m);
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() =>
+                    set("season_months", on ? v.season_months.filter((x) => x !== m) : [...v.season_months, m])
+                  }
+                  className={`min-h-11 rounded-lg border text-sm ${on ? "border-sea bg-sea text-on-sea" : "border-line bg-surface"}`}
+                >
+                  {m}월
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            {v.season_months.length === 0
+              ? "아무것도 안 고르면 「사계절」이에요. 철이 있는 체험만 운영하는 달을 골라 주세요."
+              : "고른 달에만 「지금 시즌」으로 보이고, 나머지 달엔 「비시즌」으로 따로 보여요."}
+          </p>
+        </fieldset>
         <BilingualField name="time_note" label="시간 안내" ko={v.time_note_ko} en={v.time_note_en} onKo={(x) => set("time_note_ko", x)} onEn={(x) => set("time_note_en", x)} koPlaceholder="매일 오전 7시" aiEnabled={aiEnabled} />
         <label className="inline-flex min-h-11 items-center gap-2 text-sm">
           <input type="checkbox" checked={v.rainy_ok} onChange={(e) => set("rainy_ok", e.target.checked)} className="size-5" />

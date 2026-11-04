@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import Link from "next/link";
+import { can } from "@/lib/permissions";
 import { logout } from "./actions";
 import { adminConfigError, getAdmin, type Admin } from "./auth";
 import "../globals.css";
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/admin", label: "홈" },
   { href: "/admin/places", label: "가게" },
   { href: "/admin/activities", label: "할 거리" },
+  { href: "/admin/stories", label: "이야기" },
   { href: "/admin/tips", label: "팁함" },
 ] as const;
 
@@ -41,7 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted">
                   {admin.display_name}
-                  {admin.role === "owner" ? " · 운영" : ""}
+                  {admin.role === "owner" ? " · 운영" : admin.role === "editor" ? " · 편집" : ""}
                 </span>
                 <form action={logout}>
                   <button type="submit" className="min-h-11 px-2 text-sea underline-offset-2 hover:underline">
@@ -53,7 +55,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
           {admin ? (
             <nav className="mx-auto flex w-full max-w-2xl gap-1 overflow-x-auto px-2 pb-1" aria-label="관리 메뉴">
-              {[...NAV, ...(admin.role === "owner" ? [{ href: "/admin/contributors", label: "기여자" }] : [])].map(
+              {[
+                ...NAV,
+                ...(can(admin.role, "publish_story") ? [{ href: "/admin/review", label: "검토" }] : []),
+                ...(can(admin.role, "publish_story") ? [{ href: "/admin/stale", label: "재확인" }] : []),
+                ...(can(admin.role, "manage_contributors") ? [{ href: "/admin/contributors", label: "기여자" }] : []),
+              ].map(
                 (n) => (
                   <Link
                     key={n.href}

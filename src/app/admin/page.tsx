@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { can } from "@/lib/permissions";
 import { sampleValues } from "@/lib/samples";
+import { STALE_DAYS, activityNeedsRecheck } from "@/lib/stale";
 import { serviceClient } from "@/lib/supabase";
 import { requireAdmin } from "./auth";
+import { countStoriesAdmin } from "./data";
 import { Card, PageTitle, btnSecondary } from "./_components/ui";
-
-const STALE_DAYS = 30;
 
 export default async function AdminHome() {
   const admin = await requireAdmin();
@@ -15,13 +16,15 @@ export default async function AdminHome() {
   // 운영(샘플 숨김)에서는 샘플 가게·할 거리를 개수에서 뺀다
   const samples = sampleValues();
 
-  const [stale, changed, places, activities] = await Promise.all([
+  const [stale, staleActivities, changed, places, activities] = await Promise.all([
     db
       .from("places")
       .select("id", { count: "exact", head: true })
       .in("is_sample", samples)
       .neq("status", "closed")
       .or(`verified_at.is.null,verified_at.lt.${cutoff}`),
+    // 개수는 재확인 목록과 같은 판정(activityNeedsRecheck — 끝난 기간 행사 제외)으로 센다
+    db.from("activities").select("id,kind,starts_on,ends_on,verified_at").in("is_sample", samples),
     db
       .from("tips")
       .select("id", { count: "exact", head: true })
@@ -31,7 +34,16 @@ export default async function AdminHome() {
     db.from("places").select("id", { count: "exact", head: true }).in("is_sample", samples),
     db.from("activities").select("id", { count: "exact", head: true }).in("is_sample", samples),
   ]);
-  for (const r of [stale, changed, places, activities]) if (r.error) throw new Error(r.error.message);
+  for (const r of [stale, staleActivities, changed, places, activities]) if (r.error) throw new Error(r.error.message);
+  type RecheckRow = Parameters<typeof activityNeedsRecheck>[0];
+  const staleActivityCount = ((staleActivities.data ?? []) as RecheckRow[]).filter((a) => activityNeedsRecheck(a, now)).length;
+
+  // 이야기 카드: 검토 대기(편집 이상) · 돌려받은 내 이야기(누구나 — 자기 글)
+  const reviewer = can(admin.role, "publish_story");
+  const [waiting, returnedMine] = await Promise.all([
+    reviewer ? countStoriesAdmin({ status: "review" }) : Promise.resolve(0),
+    countStoriesAdmin({ status: "returned", authorId: admin.id }),
+  ]);
 
   return (
     <>
@@ -42,12 +54,39 @@ export default async function AdminHome() {
           <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{stale.count ?? 0}</p>
           <p className="mt-1 text-xs text-muted">휴업 제외 · 확인 기록 없는 곳 포함</p>
         </Link>
+        <Link href="/admin/activities" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
+          <p className="text-sm text-muted">확인 {STALE_DAYS}일 지난 할 거리</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{staleActivityCount}</p>
+          <p className="mt-1 text-xs text-muted">끝난 행사 제외 · 확인 기록 없는 것 포함</p>
+        </Link>
         <Link href="/admin/tips" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
           <p className="text-sm text-muted">새 「바뀌었어요」 팁</p>
           <p className="mt-1 text-3xl font-bold tabular-nums text-sea">{changed.count ?? 0}</p>
           <p className="mt-1 text-xs text-muted">처리 전 · 숨김 제외</p>
         </Link>
+        {reviewer ? (
+          <Link href="/admin/review" className="rounded-xl border border-line bg-surface p-4 hover:border-sea">
+            <p className="text-sm text-muted">검토 대기 이야기</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums text-sea">{waiting}</p>
+            <p className="mt-1 text-xs text-muted">열어서 공개·돌려보내기</p>
+          </Link>
+        ) : null}
+        {!reviewer || returnedMine > 0 ? (
+          <Link
+            href="/admin/stories"
+            className={`rounded-xl border bg-surface p-4 hover:border-sea ${returnedMine > 0 ? "border-salmon" : "border-line"}`}
+          >
+            <p className="text-sm text-muted">돌려받은 내 이야기</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums text-salmon-strong">{returnedMine}</p>
+            <p className="mt-1 text-xs text-muted">편집 메모를 보고 고쳐 주세요</p>
+          </Link>
+        ) : null}
       </div>
+      {can(admin.role, "publish_story") ? (
+        <Link href="/admin/stale" className="rounded-xl border border-line bg-surface p-4 font-medium text-sea hover:border-sea">
+          재확인 목록 보기 → <span className="text-sm font-normal text-muted">장소·놀거리·가이드·들른 곳 확인 필요 이야기</span>
+        </Link>
+      ) : null}
       <Card title="바로 가기">
         <div className="grid grid-cols-2 gap-2">
           <Link href="/admin/places/new" className={btnSecondary}>
@@ -55,6 +94,12 @@ export default async function AdminHome() {
           </Link>
           <Link href="/admin/activities/new" className={btnSecondary}>
             + 할 거리 추가
+          </Link>
+          <Link href="/admin/stories/new" className={btnSecondary}>
+            + 이야기 쓰기
+          </Link>
+          <Link href="/admin/stories" className={btnSecondary}>
+            내 이야기
           </Link>
           <Link href="/admin/places" className={btnSecondary}>
             가게 {places.count ?? 0}곳

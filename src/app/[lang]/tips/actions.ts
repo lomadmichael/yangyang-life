@@ -7,22 +7,24 @@ import { serviceClient } from "@/lib/supabase";
 import { tipTargetExists } from "@/lib/queries";
 import {
   CONTACT_MAX,
+  DEVICE_COOKIE,
   POST_DAY_LIMIT,
   POST_DAY_MS,
   REPORT_HIDE_AT,
   canPost,
   isTipKind,
+  isTipTarget,
   validateTip,
   type TipRejectReason,
 } from "@/lib/tips";
 
 // 팁 쓰기·신고 서버 액션. DB 쓰기는 전부 service role — 브라우저엔 키가 가지 않는다.
 
-const DEVICE_COOKIE = "yl_did";
 const ONE_YEAR_S = 60 * 60 * 24 * 365;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const REASON_KEY: Record<TipRejectReason, DictKey> = {
+  target: "tipErrTarget",
   length: "tipErrLength",
   link: "tipErrLink",
   phone: "tipErrPhone",
@@ -33,6 +35,7 @@ const REASON_KEY: Record<TipRejectReason, DictKey> = {
 const DETAIL_ROUTE = {
   place: "/[lang]/place/[slug]",
   activity: "/[lang]/activity/[id]",
+  story: "/[lang]/stories/[slug]",
 } as const;
 
 /** 기기 식별 쿠키 — 없거나 이상하면 새로 발급(1년) */
@@ -62,12 +65,12 @@ export async function submitTip(formData: FormData): Promise<{ ok: boolean; mess
 
   const targetType = str(formData.get("target_type"));
   const targetId = str(formData.get("target_id"));
-  if ((targetType !== "place" && targetType !== "activity") || !UUID_RE.test(targetId)) return say(false, "tipErrTarget");
+  if (!isTipTarget(targetType) || !UUID_RE.test(targetId)) return say(false, "tipErrTarget");
 
   const kind = str(formData.get("kind"));
   const body = str(formData.get("body"));
   const nickname = str(formData.get("nickname"));
-  const checked = validateTip({ kind: kind as never, body, nickname });
+  const checked = validateTip({ target_type: targetType, kind: kind as never, body, nickname });
   if (!checked.ok) return say(false, REASON_KEY[checked.reason]);
   if (!isTipKind(kind)) return say(false, "tipErrKind"); // 위에서 걸러지지만 타입 좁히기용
 
@@ -145,7 +148,7 @@ export async function reportTip(tipId: string): Promise<{ ok: boolean }> {
       .eq("id", tipId);
     if (updErr) throw updErr;
 
-    if (hide) revalidatePath(DETAIL_ROUTE[tip.target_type as "place" | "activity"], "page");
+    if (hide) revalidatePath(DETAIL_ROUTE[tip.target_type as keyof typeof DETAIL_ROUTE], "page");
     return { ok: true };
   } catch (e) {
     console.error("[reportTip]", e instanceof Error ? e.message : e);

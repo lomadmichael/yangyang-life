@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canPost, validateTip } from "../src/lib/tips";
+import { canPost, isTipTarget, validateTip } from "../src/lib/tips";
 
 describe("validateTip (brief)", () => {
   it("accepts a normal tip", () => {
@@ -137,5 +137,27 @@ describe("canPost", () => {
     expect(canPost(ten, new Date(base + 10 * 3600_000))).toBe(false);
     expect(canPost(ten.slice(0, 9), new Date(base + 10 * 3600_000))).toBe(true);
     expect(canPost(ten, new Date(base + 24 * 3600_000 + 1))).toBe(true); // 첫 건이 24시간 밖으로
+  });
+});
+
+describe("isTipTarget", () => {
+  it("가게·놀거리·이야기만", () => {
+    expect(["place", "activity", "story"].every(isTipTarget)).toBe(true);
+    expect(isTipTarget("tip")).toBe(false);
+    expect(isTipTarget(undefined)).toBe(false);
+  });
+});
+
+describe("validateTip (대상 종류 — 이야기 팁)", () => {
+  it("이야기(story) 대상은 통과", () => {
+    expect(validateTip({ target_type: "story", kind: "tip", body: "비 오는 날엔 순서를 바꿔도 좋아요", nickname: "여행자" })).toEqual({
+      ok: true,
+    });
+  });
+  it("모르는 대상(menu)은 거절", () => {
+    expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      validateTip({ target_type: "menu", kind: "tip", body: "메뉴가 바뀌었어요", nickname: "여행자" } as any),
+    ).toEqual({ ok: false, reason: "target" });
   });
 });

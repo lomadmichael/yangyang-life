@@ -7,7 +7,7 @@ import { PageTitle, Pill } from "../_components/ui";
 
 interface TipRow {
   id: string;
-  target_type: "place" | "activity";
+  target_type: "place" | "activity" | "story";
   target_id: string;
   kind: "changed" | "tip" | "directions";
   body: string;
@@ -52,14 +52,26 @@ export default async function TipsInbox({ searchParams }: PageProps<"/admin/tips
 
   const placeIds = [...new Set(tips.filter((t) => t.target_type === "place").map((t) => t.target_id))];
   const actIds = [...new Set(tips.filter((t) => t.target_type === "activity").map((t) => t.target_id))];
-  const [places, acts] = await Promise.all([
+  const storyIds = [...new Set(tips.filter((t) => t.target_type === "story").map((t) => t.target_id))];
+  const [places, acts, stories] = await Promise.all([
     placeIds.length ? db.from("places").select("id,name_ko").in("id", placeIds) : Promise.resolve({ data: [], error: null }),
     actIds.length ? db.from("activities").select("id,title_ko").in("id", actIds) : Promise.resolve({ data: [], error: null }),
+    storyIds.length ? db.from("stories").select("id,title_ko,slug").in("id", storyIds) : Promise.resolve({ data: [], error: null }),
   ]);
+  // 대상 종류마다 id 가 겹칠 일은 없지만(uuid), 종류를 키에 넣어 섞이지 않게 한다
   const targetName = new Map<string, string>([
-    ...((places.data ?? []) as { id: string; name_ko: string }[]).map((p) => [p.id, p.name_ko] as [string, string]),
-    ...((acts.data ?? []) as { id: string; title_ko: string }[]).map((a) => [a.id, a.title_ko] as [string, string]),
+    ...((places.data ?? []) as { id: string; name_ko: string }[]).map((p) => [`place:${p.id}`, p.name_ko] as [string, string]),
+    ...((acts.data ?? []) as { id: string; title_ko: string }[]).map((a) => [`activity:${a.id}`, a.title_ko] as [string, string]),
+    ...((stories.data ?? []) as { id: string; title_ko: string }[]).map((s) => [`story:${s.id}`, s.title_ko] as [string, string]),
   ]);
+  const storySlug = new Map(((stories.data ?? []) as { id: string; slug: string }[]).map((s) => [s.id, s.slug]));
+  /** 고치러 갈 곳 — 장소·놀거리는 관리 편집 화면, 이야기는 공개 이야기(팁이 달린 화면) */
+  const targetHref = (t: TipRow): string | null => {
+    if (t.target_type === "place") return `/admin/places/${t.target_id}`;
+    if (t.target_type === "activity") return `/admin/activities/${t.target_id}`;
+    const slug = storySlug.get(t.target_id);
+    return slug ? `/ko/stories/${slug}` : null;
+  };
   const canHide = can(admin.role, "hide_tip");
 
   return (
@@ -93,8 +105,8 @@ export default async function TipsInbox({ searchParams }: PageProps<"/admin/tips
       ) : (
         <ul className="flex flex-col gap-2">
           {tips.map((t) => {
-            const name = targetName.get(t.target_id);
-            const href = t.target_type === "place" ? `/admin/places/${t.target_id}` : `/admin/activities/${t.target_id}`;
+            const name = targetName.get(`${t.target_type}:${t.target_id}`);
+            const href = targetHref(t);
             return (
               <li
                 key={t.id}
@@ -110,10 +122,18 @@ export default async function TipsInbox({ searchParams }: PageProps<"/admin/tips
                   </span>
                 </div>
                 <p className="text-sm">
-                  {name ? (
-                    <Link href={href} className="font-medium text-sea underline underline-offset-2">
-                      {name}
-                    </Link>
+                  {name && href ? (
+                    <>
+                      {t.target_type === "story" ? <span className="text-muted">이야기 · </span> : null}
+                      <Link
+                        href={href}
+                        target={t.target_type === "story" ? "_blank" : undefined}
+                        className="font-medium text-sea underline underline-offset-2"
+                      >
+                        {name}
+                        {t.target_type === "story" ? " ↗" : ""}
+                      </Link>
+                    </>
                   ) : (
                     <span className="text-muted">(지워진 대상)</span>
                   )}

@@ -32,3 +32,9 @@ export function filterPlaces(places: Place[], f: PlaceFilter, now: Date): Place[
     )
     .map(({ p }) => p);
 }
+
+/** 항목이 1개 이상 있는 분류만, order 순서대로 (빈 분류 탭은 숨긴다) */
+export function visibleCategories<K extends string>(order: readonly K[], items: { category: K }[]): K[] {
+  const present = new Set(items.map((i) => i.category));
+  return order.filter((k) => present.has(k));
+}

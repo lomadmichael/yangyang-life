@@ -4,14 +4,27 @@ import {
   getPlaceByCode,
   getPlaceBySlug,
   listActivities,
+  getGuide,
+  getStoryBySlug,
+  listActivitiesByIds,
   listContributors,
   listMenu,
   listPlaces,
+  listPlacesByIds,
+  listStories,
+  listStoriesByIds,
+  listStoriesMentioning,
   listTips,
+  tipTargetExists,
 } from "../src/lib/queries";
 
 const hasDb = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
 const original = process.env.YL_SHOW_SAMPLES;
+// 이야기(0003 마이그레이션 + seed_v2) 검사는 운영 DB 에 stories_public 이 생긴 뒤에만 돈다
+const hasStories =
+  hasDb && !(await anonClient().from("stories_public").select("id").limit(1)).error;
+const BARAMGIL = "00000000-0000-4000-8000-000000000104";
+const RAINY_STORY = "00000000-0000-4000-8000-000000000501";
 
 describe.skipIf(!hasDb)("queries (샘플 표시 YL_SHOW_SAMPLES=1)", () => {
   beforeEach(() => {
@@ -151,6 +164,76 @@ describe.skipIf(!hasDb)("queries (샘플 숨김, YL_SHOW_SAMPLES 없음)", () =>
     for (const placeId of samplePlaces) {
       expect(disjoint((await listTips("place", placeId)).map((t) => t.id), range(401, 402))).toEqual([]);
       expect(await listMenu(placeId)).toEqual([]);
+    }
+  });
+});
+
+describe.skipIf(!hasStories)("이야기 queries (0003 적용 후, 샘플 표시)", () => {
+  beforeEach(() => {
+    process.env.YL_SHOW_SAMPLES = "1";
+  });
+  afterEach(() => {
+    if (original === undefined) delete process.env.YL_SHOW_SAMPLES;
+    else process.env.YL_SHOW_SAMPLES = original;
+  });
+
+  it("이야기 목록 · 갈래 · 가이드", async () => {
+    const stories = await listStories();
+    expect(stories.length).toBeGreaterThanOrEqual(3);
+    const times = stories.map((s) => s.published_at);
+    expect(times).toEqual([...times].sort().reverse());
+    const guides = await listStories({ type: "guide" });
+    expect(guides.length).toBe(1);
+    expect(guides[0].guide_topic).toBe("surf");
+    expect((await getGuide("surf"))?.id).toBe(guides[0].id);
+    expect(await getGuide("no-such-topic")).toBeNull();
+    expect((await listStories({ tag: "nocar" })).every((s) => s.tags.includes("nocar"))).toBe(true);
+  });
+
+  it("들른 곳 역조회: 바람길 서핑하우스가 나오는 이야기", async () => {
+    const found = await listStoriesMentioning("place", BARAMGIL);
+    expect(found.map((s) => s.id)).toContain(RAINY_STORY);
+    expect(found.find((s) => s.id === RAINY_STORY)?.title_ko).toBe("비 오는 날 차 없이 현남 하루");
+    expect(await listStoriesMentioning("place", "not-a-uuid")).toEqual([]);
+  });
+
+  it("공개 이야기엔 status·review_note 가 없다", async () => {
+    const [first] = await listStories();
+    const story = await getStoryBySlug(first.slug);
+    expect(story?.id).toBe(first.id);
+    expect(story && "status" in story).toBe(false);
+    expect(story && "review_note" in story).toBe(false);
+    expect(await getStoryBySlug("no-such-story")).toBeNull();
+  });
+
+  it("id 묶음 조회: 순서 유지 · 빈 배열 · 이상한 id", async () => {
+    const places = await listPlaces();
+    const ids = places.slice(0, 3).map((p) => p.id).reverse();
+    expect((await listPlacesByIds(ids)).map((p) => p.id)).toEqual(ids);
+    expect(await listPlacesByIds([])).toEqual([]);
+    expect(await listActivitiesByIds(["nope"])).toEqual([]);
+    expect((await listStoriesByIds([RAINY_STORY])).map((s) => s.id)).toEqual([RAINY_STORY]);
+    expect(await tipTargetExists("story", RAINY_STORY)).toBe(true);
+  });
+});
+
+describe.skipIf(!hasStories)("이야기 queries (0003 적용 후, 샘플 숨김)", () => {
+  beforeEach(() => {
+    delete process.env.YL_SHOW_SAMPLES;
+  });
+  afterEach(() => {
+    if (original !== undefined) process.env.YL_SHOW_SAMPLES = original;
+  });
+
+  it("샘플 이야기도 안 나온다 (실데이터 이야기가 들어와도 유지되는 검사)", async () => {
+    const sampleStories = [501, 502, 503].map((n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
+    const stories = await listStories();
+    expect(stories.every((s) => !s.is_sample)).toBe(true);
+    expect(stories.map((s) => s.id).filter((id) => sampleStories.includes(id))).toEqual([]);
+    expect(await listStoriesByIds(sampleStories)).toEqual([]);
+    for (const id of sampleStories) {
+      expect(await tipTargetExists("story", id), id).toBe(false);
+      expect(await listTips("story", id), id).toEqual([]);
     }
   });
 });

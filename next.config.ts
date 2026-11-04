@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // v2 에서 옛 주소 /eat → /places, /do → /play (308, 쿼리 ?cat=…&open=1 은 Next 가 그대로 넘긴다)
+  async redirects() {
+    return [
+      { source: "/:lang(ko|en)/eat", destination: "/:lang/places", permanent: true },
+      { source: "/:lang(ko|en)/do", destination: "/:lang/play", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

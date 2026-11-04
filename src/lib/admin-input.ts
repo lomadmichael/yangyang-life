@@ -1,5 +1,20 @@
 import { ko } from "../i18n/ko";
-import type { Activity, MenuItem, Place, VerifiedMethod, Weekday, WeeklyHours } from "./types";
+import { AMENITIES, CATEGORIES, PLAY_CATEGORIES, STORY_TAGS, STORY_TYPES } from "./labels";
+import { parseStoryBlocks } from "./story-blocks";
+import { isAllowedPhotoUrl } from "./story-photos";
+import type {
+  Activity,
+  Amenity,
+  MenuItem,
+  Place,
+  PlayCategory,
+  Story,
+  StoryTag,
+  StoryType,
+  VerifiedMethod,
+  Weekday,
+  WeeklyHours,
+} from "./types";
 
 // 관리 화면 입력 검사 — 브라우저가 보낸 값은 전부 여기서 다시 확인해 DB 행으로 바꾼다.
 // 클라이언트가 보낸 code·created_by·verified_*·is_sample 은 절대 받지 않는다(서버 액션이 따로 채움).
@@ -25,10 +40,27 @@ export const WEEKDAY_NUM_KO = ["일", "월", "화", "수", "목", "금", "토"];
 export const CATEGORY_KO: Record<Place["category"], string> = {
   food: "식당",
   cafe: "카페",
-  bar: "바·술집",
+  stay: "숙소",
   surf: "서핑샵",
-  shop: "가게(상점)",
+  bar: "펍·바",
+  spot: "해변·명소",
+  life: "생활 편의",
 };
+/** 장소 분류 중 가격대·영어 메뉴가 없는 곳(해변·명소, 생활 편의) — 폼에서 그 칸을 숨기고 편의를 보인다 */
+export const NON_DINING_CATEGORIES: readonly Place["category"][] = ["spot", "life"];
+export const AMENITY_KO: Record<Amenity, string> = { toilet: "화장실", shower: "샤워장" };
+export const PLAY_CATEGORY_KO: Record<PlayCategory, string> = {
+  surf: "서핑·SUP",
+  festival: "축제·행사",
+  eco: "생태·자연",
+  hike: "등산",
+  fishing: "낚시",
+  walk: "산책 코스",
+  yoga: "요가·웰니스",
+  village: "마을·농촌 체험",
+};
+export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+
 export const STATUS_KO: Record<Place["status"], string> = {
   participating: "참여 가게 (사진·영어 메뉴 공개)",
   listed: "일반 (정보만)",
@@ -150,6 +182,14 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
   if (![1, 2, 3].includes(price)) return bad("가격대를 골라 주세요");
   const hours = parseHours(r.hours ?? {});
   if (!hours.ok) return hours;
+  // 편의: 없으면 빈 배열. 모르는 값이 섞이면 거절. 순서는 AMENITIES 순서로 고정(중복 제거)
+  let amenities: Amenity[] = [];
+  if (r.amenities !== undefined && r.amenities !== null) {
+    if (!Array.isArray(r.amenities)) return bad("편의 형식이 잘못됐어요");
+    const given = r.amenities.map(String);
+    if (given.some((a) => !(AMENITIES as string[]).includes(a))) return bad("편의는 화장실·샤워장만 고를 수 있어요");
+    amenities = AMENITIES.filter((a) => given.includes(a));
+  }
 
   return ok({
     slug,
@@ -169,6 +209,7 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
     foreign_card: triState(r.foreign_card),
     how_to_get_ko: text(r.how_to_get_ko, 1000),
     how_to_get_en: text(r.how_to_get_en, 1000),
+    amenities,
   });
 }
 
@@ -213,7 +254,12 @@ export function parseMenuInput(raw: unknown): Parsed<MenuRow[]> {
 
 export type ActivityRow = Omit<
   Activity,
-  "id" | "verified_method" | "verified_at" | "verified_by_name" | "created_by_name" | "is_sample"
+  | "id"
+  | "verified_method"
+  | "verified_at"
+  | "verified_by_name"
+  | "created_by_name"
+  | "is_sample"
 >;
 
 function ymd(v: unknown): string | null | false {
@@ -228,6 +274,16 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
   const r = rec(raw);
   const kind = String(r.kind ?? "");
   if (kind !== "dated" && kind !== "always") return bad("종류(기간 행사 / 상시)를 골라 주세요");
+  const category = String(r.category ?? "");
+  if (!(PLAY_CATEGORIES as string[]).includes(category)) return bad("분류를 골라 주세요");
+  // 운영 계절: 1~12월 정수만. 비우면 사계절. 정렬·중복 제거
+  let season_months: number[] = [];
+  if (r.season_months !== undefined && r.season_months !== null) {
+    if (!Array.isArray(r.season_months)) return bad("운영 계절 형식이 잘못됐어요");
+    const months = r.season_months.map(Number);
+    if (months.some((m) => !Number.isInteger(m) || m < 1 || m > 12)) return bad("운영 계절은 1~12월만 고를 수 있어요");
+    season_months = [...new Set(months)].sort((a, b) => a - b);
+  }
   const title_ko = text(r.title_ko, 120);
   if (!title_ko) return bad("제목(국문)을 적어 주세요");
   const starts_on = ymd(r.starts_on);
@@ -245,6 +301,8 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
 
   return ok({
     kind,
+    category: category as PlayCategory,
+    season_months,
     title_ko,
     title_en: text(r.title_en, 120),
     desc_ko: text(r.desc_ko, 2000),
@@ -264,4 +322,121 @@ export function parseActivityInput(raw: unknown): Parsed<ActivityRow> {
 
 export function isVerifiedMethod(v: unknown): v is VerifiedMethod {
   return typeof v === "string" && Object.prototype.hasOwnProperty.call(METHOD_KO, v);
+}
+
+// ───────────────────────── 이야기 ─────────────────────────
+
+/** 가이드 주제 = 놀거리 분류 → 장소 분류 순(겹치는 surf 는 한 번) */
+export const GUIDE_TOPICS: string[] = [...new Set<string>([...PLAY_CATEGORIES, ...CATEGORIES])];
+export const STORY_TYPE_KO: Record<StoryType, string> = { course: "코스", people: "사람", guide: "가이드" };
+export const STORY_TAG_KO: Record<StoryTag, string> = {
+  solo: "혼자",
+  couple: "커플",
+  family: "가족",
+  nocar: "차 없이",
+  rainy: "비 오는 날",
+};
+/** 가이드 주제 키 → 관리 화면 이름 */
+export function guideTopicKo(topic: string): string {
+  return (
+    (PLAY_CATEGORY_KO as Record<string, string>)[topic] ?? (CATEGORY_KO as Record<string, string>)[topic] ?? topic
+  );
+}
+
+/**
+ * 이야기 행 중 글쓴이가 고칠 수 있는 칸. slug 가 null 이면 「서버가 정함」(새 글은 임의 이름, 고칠 때는 그대로).
+ * author_id·status·review_note·published_at·verified_at·is_sample 은 여기서 받지 않는다(서버 액션이 따로 정함).
+ */
+export type StoryRow = Pick<
+  Story,
+  | "type"
+  | "guide_topic"
+  | "title_ko"
+  | "title_en"
+  | "summary_ko"
+  | "summary_en"
+  | "cover_photo"
+  | "visited_on"
+  | "tags"
+  | "blocks"
+> & { slug: string | null };
+
+const MAX_STORY_TITLE = 80;
+const MAX_STORY_SUMMARY = 140;
+
+/** 길이를 넘으면 자르지 않고 거절(제목·요약은 잘리면 뜻이 바뀐다) */
+function bounded(v: unknown, max: number): string | null | false {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") return false;
+  const s = v.trim();
+  if (s.length > max) return false;
+  return s || null;
+}
+
+/** supabaseUrl: 대표 사진·사진 블록 주소의 허용 기준(NEXT_PUBLIC_SUPABASE_URL) — 순수 함수라 env 를 직접 읽지 않는다 */
+export function parseStoryInput(raw: unknown, supabaseUrl: string): Parsed<StoryRow> {
+  const r = rec(raw);
+  const type = String(r.type ?? "");
+  if (!(STORY_TYPES as string[]).includes(type)) return bad("갈래(코스·사람·가이드)를 골라 주세요");
+  const topicRaw = typeof r.guide_topic === "string" ? r.guide_topic.trim() : "";
+  if (type === "guide") {
+    if (!topicRaw) return bad("가이드는 주제(분류)를 골라 주세요");
+    if (!GUIDE_TOPICS.includes(topicRaw)) return bad("가이드 주제는 놀거리·장소 분류 중에서 골라 주세요");
+  } else if (topicRaw) {
+    return bad("주제는 가이드에만 정할 수 있어요");
+  }
+
+  const title_ko = bounded(r.title_ko, MAX_STORY_TITLE);
+  if (title_ko === false) return bad(`제목은 ${MAX_STORY_TITLE}자까지예요`);
+  if (!title_ko) return bad("제목(국문)을 적어 주세요");
+  const title_en = bounded(r.title_en, MAX_STORY_TITLE);
+  if (title_en === false) return bad(`영문 제목은 ${MAX_STORY_TITLE}자까지예요`);
+  const summary_ko = bounded(r.summary_ko, MAX_STORY_SUMMARY);
+  const summary_en = bounded(r.summary_en, MAX_STORY_SUMMARY);
+  if (summary_ko === false || summary_en === false) return bad(`한 줄 요약은 ${MAX_STORY_SUMMARY}자까지예요`);
+
+  let slug: string | null = typeof r.slug === "string" ? r.slug.trim() : "";
+  if (slug) {
+    if (!SLUG_RE.test(slug) || slug.length > 60) {
+      return bad("주소 이름(slug)은 영문 소문자·숫자·하이픈만 (예: rainy-day-hyeonnam)");
+    }
+  } else {
+    slug = title_en ? suggestSlug(title_en) : "";
+    if (!SLUG_RE.test(slug)) slug = null;
+  }
+
+  const coverRaw = typeof r.cover_photo === "string" ? r.cover_photo.trim() : "";
+  let cover_photo: string | null = null;
+  if (coverRaw) {
+    if (!isAllowedPhotoUrl(coverRaw, supabaseUrl)) return bad("대표 사진은 「대표 사진」 칸에서 올린 것만 쓸 수 있어요");
+    cover_photo = coverRaw;
+  }
+
+  const visited_on = ymd(r.visited_on);
+  if (visited_on === false) return bad("다녀온 날 형식이 잘못됐어요");
+
+  let tags: StoryTag[] = [];
+  if (r.tags !== undefined && r.tags !== null) {
+    if (!Array.isArray(r.tags)) return bad("추천 태그 형식이 잘못됐어요");
+    const given = r.tags.map(String);
+    if (given.some((x) => !(STORY_TAGS as string[]).includes(x))) return bad("추천 태그는 정해진 5개 중에서만 골라 주세요");
+    tags = STORY_TAGS.filter((x) => given.includes(x));
+  }
+
+  const blocks = parseStoryBlocks(r.blocks ?? [], supabaseUrl);
+  if (!blocks.ok) return blocks;
+
+  return ok({
+    type: type as StoryType,
+    guide_topic: type === "guide" ? topicRaw : null,
+    slug,
+    title_ko,
+    title_en,
+    summary_ko,
+    summary_en,
+    cover_photo,
+    visited_on,
+    tags,
+    blocks: blocks.value,
+  });
 }
