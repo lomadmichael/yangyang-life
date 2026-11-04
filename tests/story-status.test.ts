@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canEditStory, nextStatusOnSave } from "../src/lib/story-status";
+import { canEditStory, canSeeReviewNote, canViewStory, nextStatusOnSave } from "../src/lib/story-status";
 import type { Role } from "../src/lib/permissions";
 import type { StoryStatus } from "../src/lib/types";
 
@@ -64,5 +64,24 @@ describe("canEditStory", () => {
     expect(canEditStory("member", true)).toBe(true);
     expect(canEditStory("member", false)).toBe(false);
     expect(canEditStory("guest" as Role, true)).toBe(false);
+  });
+});
+
+describe("관리 이야기 공개 범위 (member 는 남의 공개 글만)", () => {
+  it("canViewStory 표 전체", () => {
+    for (const status of STATUSES) {
+      expect(canViewStory("owner", false, status), status).toBe(true);
+      expect(canViewStory("editor", false, status), status).toBe(true);
+      expect(canViewStory("member", true, status), status).toBe(true);
+      expect(canViewStory("member", false, status), status).toBe(status === "published");
+      expect(canViewStory("guest" as Role, true, status), status).toBe(false);
+    }
+  });
+  it("돌려보내기 메모는 글쓴이·편집·운영만", () => {
+    for (const role of ROLES) expect(canSeeReviewNote(role, true), role).toBe(true);
+    expect(canSeeReviewNote("owner", false)).toBe(true);
+    expect(canSeeReviewNote("editor", false)).toBe(true);
+    expect(canSeeReviewNote("member", false)).toBe(false);
+    expect(canSeeReviewNote("guest" as Role, true)).toBe(false);
   });
 });

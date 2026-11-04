@@ -14,6 +14,22 @@ export function canEditStory(role: Role, isAuthor: boolean): boolean {
   return role === "owner" || role === "editor" || isAuthor === true;
 }
 
+/** 편집·운영은 모두 볼 수 있다(검토 권한). member 는 남의 글 중 공개(published) 글만 — 초안·검토중·돌려받은 글은 못 본다 */
+function isReviewerRole(role: Role): boolean {
+  return isRole(role) && (role === "owner" || role === "editor");
+}
+
+/** 관리 화면 목록·상세에서 이 이야기를 보여 줘도 되는가 (서버 페이지가 판정) */
+export function canViewStory(role: Role, isAuthor: boolean, status: StoryStatus): boolean {
+  if (!isRole(role)) return false;
+  return isReviewerRole(role) || isAuthor === true || status === "published";
+}
+
+/** 돌려보내기 메모(review_note)는 글쓴이와 편집·운영만 본다 */
+export function canSeeReviewNote(role: Role, isAuthor: boolean): boolean {
+  return isReviewerRole(role) || (isRole(role) && isAuthor === true);
+}
+
 export function nextStatusOnSave(
   current: StoryStatus,
   role: Role,

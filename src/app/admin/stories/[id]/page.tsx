@@ -6,7 +6,7 @@ import { formatVerifiedDate } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { listActivities, listPlaces } from "@/lib/queries";
 import { resolveStops, stopTargets } from "@/lib/story-blocks";
-import { canEditStory } from "@/lib/story-status";
+import { canEditStory, canSeeReviewNote, canViewStory } from "@/lib/story-status";
 import { translationAvailable } from "@/lib/translate";
 import { requireAdmin } from "../../auth";
 import { contributorNames, getStoryAdmin, stopOptions } from "../../data";
@@ -27,6 +27,9 @@ export default async function StoryAdminPage({ params }: PageProps<"/admin/stori
   if (!story) notFound();
 
   const isAuthor = story.author_id !== null && story.author_id === admin.id;
+  // member 는 남의 글 중 공개 글만 볼 수 있다 — 없는 글과 똑같이 404(초안이 있다는 것도 안 알림)
+  if (!canViewStory(admin.role, isAuthor, story.status)) notFound();
+  const reviewNote = canSeeReviewNote(admin.role, isAuthor) ? story.review_note : null;
   const editable = canEditStory(admin.role, isAuthor);
   const reviewer = can(admin.role, "publish_story");
   const [names, opts, previewPlaces, previewActivities] = await Promise.all([
@@ -72,10 +75,10 @@ export default async function StoryAdminPage({ params }: PageProps<"/admin/stori
         ) : null}
       </div>
 
-      {story.status === "returned" && story.review_note ? (
+      {story.status === "returned" && reviewNote ? (
         <section className="rounded-xl border border-salmon bg-surface p-4" aria-label="편집 메모">
           <p className="text-sm font-bold text-salmon-strong">돌려받은 이유 (편집 메모)</p>
-          <p className="mt-1 whitespace-pre-wrap">{story.review_note}</p>
+          <p className="mt-1 whitespace-pre-wrap">{reviewNote}</p>
           <p className="mt-2 text-xs text-muted">고친 뒤 아래 「다시 검토 요청」을 눌러 주세요.</p>
         </section>
       ) : null}

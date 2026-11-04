@@ -1,4 +1,5 @@
 import "server-only";
+import { isUuid } from "@/lib/admin-input";
 import { sampleOptions, sampleValues, showSamples } from "@/lib/samples";
 import { serviceClient } from "@/lib/supabase";
 import type { Role } from "@/lib/permissions";
@@ -243,10 +244,21 @@ function cleanBlocks<T extends { blocks: unknown }>(s: T): T & { blocks: StoryBl
 }
 
 export async function listStoriesAdmin(
-  f: { authorId?: string; status?: StoryStatus[]; order?: "updated" | "oldest" | "published"; limit?: number } = {},
+  f: {
+    authorId?: string;
+    /** member 의 「전체」: 이 사람이 쓴 글 + 남의 글은 공개(published)만 */
+    visibleToMember?: string;
+    status?: StoryStatus[];
+    order?: "updated" | "oldest" | "published";
+    limit?: number;
+  } = {},
 ): Promise<AdminStoryListItem[]> {
   let q = serviceClient().from("stories").select(STORY_LIST_COLS);
   if (f.authorId) q = q.eq("author_id", f.authorId);
+  if (f.visibleToMember) {
+    if (!isUuid(f.visibleToMember)) return [];
+    q = q.or(`author_id.eq.${f.visibleToMember},status.eq.published`);
+  }
   if (f.status?.length) q = q.in("status", f.status);
   if (f.order === "oldest") q = q.order("updated_at", { ascending: true });
   else if (f.order === "published") q = q.order("published_at", { ascending: false, nullsFirst: false });
