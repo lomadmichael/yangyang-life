@@ -97,3 +97,19 @@ export function orphanStoryPhotos(args: {
   }
   return out;
 }
+
+/**
+ * 다른 이야기 폴더의 사진을 쓰는가 — 저장 뒤 정리가 남의 폴더 파일을 지우면 그 이야기 사진이 깨지므로 막는다.
+ * 새 글(storyId null)은 아직 폴더가 없으니 이야기 폴더 사진은 전부 남의 것. 가게 사진 등 stories/ 밖은 상관없다.
+ */
+export function usesOtherStoryPhoto(
+  urls: string[],
+  storyId: string | null,
+  supabaseUrl: string | null | undefined,
+): boolean {
+  const own = storyId ? `${storyPhotoFolder(storyId)}/` : null;
+  return urls.some((u) => {
+    const path = photoPathFromUrl(u, supabaseUrl);
+    return path !== null && path.startsWith("stories/") && (own === null || !path.startsWith(own));
+  });
+}

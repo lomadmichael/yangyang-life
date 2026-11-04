@@ -22,6 +22,7 @@ import {
   realPhotoObjects,
   storyPhotoFolder,
   storyPhotoUrls,
+  usesOtherStoryPhoto,
   type StorageObject,
 } from "@/lib/story-photos";
 import type { StoryStatus } from "@/lib/types";
@@ -594,6 +595,9 @@ export async function saveStory(
   const parsed = parseStoryInput(input, supabaseUrl());
   if (!parsed.ok) return fail(parsed.error);
   const row = parsed.value;
+  if (usesOtherStoryPhoto(storyPhotoUrls(row), id, supabaseUrl())) {
+    return fail("다른 이야기에 올린 사진은 쓸 수 없어요 — 이 이야기에서 사진을 다시 올려 주세요.");
+  }
   if (intent === "submit" && !row.cover_photo) {
     return fail("대표 사진이 있어야 검토를 요청할 수 있어요 — 대표 사진 칸에서 올려 주세요.");
   }

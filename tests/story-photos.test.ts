@@ -7,6 +7,7 @@ import {
   realPhotoObjects,
   storagePublicPrefix,
   storyPhotoUrls,
+  usesOtherStoryPhoto,
 } from "../src/lib/story-photos";
 
 const SB = "https://proj.supabase.co";
@@ -78,5 +79,21 @@ describe("이야기 사진 정리", () => {
 
   it("기준 주소가 없으면 아무것도 지우지 않는다", () => {
     expect(orphanStoryPhotos({ storyId: ID, objects: [obj("gone.jpg")], keptUrls: [], supabaseUrl: "", now })).toEqual([]);
+  });
+});
+
+describe("usesOtherStoryPhoto", () => {
+  const OTHER = "22222222-2222-4222-8222-222222222222";
+  const otherUrl = `${PUB}place-photos/stories/${OTHER}/a.jpg`;
+  const placeUrl = `${PUB}place-photos/places/x/a.jpg`;
+  it("다른 이야기 폴더 사진이면 true", () => {
+    expect(usesOtherStoryPhoto([url("a.jpg"), otherUrl], ID, SB)).toBe(true);
+  });
+  it("자기 폴더·가게 사진만이면 false", () => {
+    expect(usesOtherStoryPhoto([url("a.jpg"), placeUrl], ID, SB)).toBe(false);
+  });
+  it("새 글(id 없음)은 이야기 폴더 사진을 못 쓴다", () => {
+    expect(usesOtherStoryPhoto([url("a.jpg")], null, SB)).toBe(true);
+    expect(usesOtherStoryPhoto([placeUrl], null, SB)).toBe(false);
   });
 });
