@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { LangSwitch } from "@/components/LangSwitch";
 import { SiteFooter } from "@/components/SiteFooter";
+import { TopNav } from "@/components/TopNav";
 import { LANGS, isLang, t } from "@/i18n";
 import "../globals.css";
 
@@ -37,13 +38,15 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   return (
     <html lang={lang} className={`${notoSansKr.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
+        <TopNav lang={lang} />
+        {/* 모바일 머리말 — PC(lg 이상)는 TopNav */}
+        <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2 lg:hidden">
           <Link href={`/${lang}`} className="inline-flex min-h-11 items-center font-bold text-sea">
             {t(lang, "siteName")}
           </Link>
           <LangSwitch lang={lang} />
         </header>
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col">{children}</main>
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col lg:max-w-6xl">{children}</main>
         <SiteFooter lang={lang} />
         <BottomNav lang={lang} />
       </body>

@@ -3,46 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
-import { t, type DictKey, type Lang } from "@/i18n";
+import { t, type Lang } from "@/i18n";
+import { activeTab, isMenuBoardPath, NAV_TABS, type Tab } from "@/lib/nav";
 import { IconBook, IconHome, IconPin, IconUser, IconWave } from "./icons";
 
-// 하단 메뉴 5칸. 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
+// 하단 메뉴 5칸(모바일). PC(lg 이상)는 TopNav 가 대신한다. 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
 
-type Tab = "home" | "places" | "play" | "stories" | "my";
-
-const TABS: { tab: Tab; path: string; label: DictKey; Icon: ComponentType<{ className?: string }> }[] = [
-  { tab: "home", path: "", label: "navHome", Icon: IconHome },
-  { tab: "places", path: "/places", label: "navPlaces", Icon: IconPin },
-  { tab: "play", path: "/play", label: "navPlay", Icon: IconWave },
-  { tab: "stories", path: "/stories", label: "navStories", Icon: IconBook },
-  { tab: "my", path: "/my", label: "navMy", Icon: IconUser },
-];
-
-/** 경로 첫 마디(언어 다음) → 현재 칸. 상세 화면은 부모 칸으로 본다 */
-const SECTION: Record<string, Tab> = {
-  places: "places",
-  place: "places",
-  play: "play",
-  activity: "play",
-  stories: "stories",
-  my: "my",
-  makers: "my",
+const ICONS: Record<Tab, ComponentType<{ className?: string }>> = {
+  home: IconHome,
+  places: IconPin,
+  play: IconWave,
+  stories: IconBook,
+  my: IconUser,
 };
 
-export function activeTab(pathname: string): Tab | null {
-  const first = pathname.split("/")[2] ?? "";
-  if (first === "") return "home";
-  return SECTION[first] ?? null;
-}
+export { activeTab };
 
 export function BottomNav({ lang }: { lang: Lang }) {
   const pathname = usePathname() ?? `/${lang}`;
   // 영어 메뉴판(QR 착지)에는 그리지 않는다
-  if (pathname.split("/")[2] === "m") return null;
+  if (isMenuBoardPath(pathname)) return null;
   const current = activeTab(pathname);
 
   return (
-    <>
+    <div className="lg:hidden">
       {/* 고정 메뉴에 본문 끝(푸터)이 가리지 않도록 같은 높이만큼 비워 둔다 */}
       <div aria-hidden="true" className="safe-bottom">
         <div className="h-16" />
@@ -52,8 +36,9 @@ export function BottomNav({ lang }: { lang: Lang }) {
         className="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface"
       >
         <ul className="mx-auto flex max-w-md">
-          {TABS.map(({ tab, path, label, Icon }) => {
+          {NAV_TABS.map(({ tab, path, label }) => {
             const active = tab === current;
+            const Icon = ICONS[tab];
             return (
               <li key={tab} className="flex-1">
                 <Link
@@ -73,6 +58,6 @@ export function BottomNav({ lang }: { lang: Lang }) {
           })}
         </ul>
       </nav>
-    </>
+    </div>
   );
 }

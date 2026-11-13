@@ -11,7 +11,7 @@ export interface Chip {
 /** 링크로 된 필터 칩 한 줄(넘치면 옆으로 밀어 보기) — 상태는 주소(쿼리)에 있으므로 서버 화면에서도 그대로 동작한다 */
 export function FilterChips({ label, chips }: { label: string; chips: Chip[] }) {
   return (
-    <ul aria-label={label} className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+    <ul aria-label={label} className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:px-0">
       {chips.map((c) => (
         <li key={c.href + c.label} className="shrink-0">
           <Link
