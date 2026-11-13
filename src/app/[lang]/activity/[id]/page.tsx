@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { Badge } from "@/components/Badge";
 import { FallbackNote } from "@/components/FallbackNote";
+import { FALLBACK_VISUAL, PLAY_VISUAL } from "@/components/category-visual";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
+import { PhotoFrame } from "@/components/PhotoCard";
 import { SaveButton } from "@/components/SaveButton";
 import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
@@ -35,12 +37,27 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
   const season = seasonLabel(activity.season_months ?? [], lang);
   const placeName = place ? pickText(place as unknown as Record<string, unknown>, "name", lang) : null;
 
+  // 놀거리는 자체 사진 칸이 없다 — 분류 대표 사진(이 행사의 사진이 아님 → 구석 표시)
+  const visual = PLAY_VISUAL[activity.category] ?? FALLBACK_VISUAL;
+
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
       <div className="flex items-center justify-between gap-3">
         <BackLink href={`/${lang}/play`} label={t(lang, "playTitle")} />
         <SaveButton kind="activity" id={activity.id} lang={lang} size="md" />
       </div>
+
+      {visual.photo ? (
+        <PhotoFrame
+          fallback={visual.photo}
+          fallbackLabel={t(lang, "categoryPhotoLabel")}
+          alt=""
+          Icon={visual.Icon}
+          tone={visual.tone}
+          sizes="(min-width: 1024px) 1152px, 100vw"
+          className="aspect-video rounded-2xl lg:aspect-[5/2]"
+        />
+      ) : null}
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">

@@ -37,7 +37,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
 
   return (
     <html lang={lang} className={`${notoSansKr.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col overflow-x-clip">
         <TopNav lang={lang} />
         {/* 모바일 머리말 — PC(lg 이상)는 TopNav */}
         <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2 lg:hidden">

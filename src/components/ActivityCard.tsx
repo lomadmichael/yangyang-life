@@ -11,7 +11,7 @@ import { SaveButton } from "./SaveButton";
 
 /**
  * 놀거리 목록 한 칸 — 배지·제목·언제(+운영 계절)·어디서.
- * PC 격자(lg 이상이면서 카드 폭 36rem 미만 — 넓게 펼친 카드는 모바일 모양 그대로)에서는 위에 분류 아이콘 바탕 칸을 두고 분류·제목을 겹쳐 쓴다(놀거리는 아직 사진 칸이 없다).
+ * PC 격자(lg 이상이면서 카드 폭 36rem 미만 — 넓게 펼친 카드는 모바일 모양 그대로)에서는 위에 분류 대표 사진 칸(없으면 아이콘 바탕)을 두고 분류·제목을 겹쳐 쓴다(놀거리는 아직 자체 사진 칸이 없다).
  * ★ 저장 버튼은 링크 밖(오른쪽 위)에 둔다 — 링크 안에 버튼을 넣을 수 없다.
  * dimmed: 「지금은 비시즌」 묶음에서 흐리게. 알림(토스트)까지 흐려지지 않게 링크에만 건다.
  */
@@ -43,6 +43,7 @@ export function ActivityCard({ activity, lang, dimmed = false }: { activity: Act
       >
         <div className="hidden lg:block @xl:hidden">
           <PhotoCard
+            fallback={visual.photo}
             Icon={visual.Icon}
             tone={visual.tone}
             eyebrow={categoryKey ? t(lang, categoryKey) : undefined}

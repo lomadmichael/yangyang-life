@@ -51,6 +51,7 @@ export function PlaceCard({ place, lang, now }: { place: Place; lang: Lang; now:
         <div className="hidden lg:block @xl:hidden">
           <PhotoCard
             photo={place.photos?.[0]}
+            fallback={visual.photo}
             Icon={visual.Icon}
             tone={visual.tone}
             eyebrow={categoryKey ? t(lang, categoryKey) : undefined}

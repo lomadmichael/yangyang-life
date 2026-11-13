@@ -148,6 +148,7 @@ function GuideCard({ story, lang }: { story: Story; lang: Lang }) {
       <Link href={`/${lang}/stories/${story.slug}`} className="block rounded-2xl lg:grid lg:grid-cols-3">
         <PhotoFrame
           src={story.cover_photo}
+          fallback={visual.photo}
           alt=""
           Icon={visual.Icon}
           tone={visual.tone}

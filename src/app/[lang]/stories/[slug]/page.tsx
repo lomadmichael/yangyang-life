@@ -5,6 +5,7 @@ import { FallbackNote } from "@/components/FallbackNote";
 import { IconAlert } from "@/components/icons";
 import { SaveAllButton, SaveButton } from "@/components/SaveButton";
 import { StoryBody } from "@/components/StoryBody";
+import { FALLBACK_VISUAL, STORY_VISUAL } from "@/components/category-visual";
 import { PhotoFrame, storyAuthor, storyDateLine, StoryTypeBadge } from "@/components/StoryCard";
 import { TipList } from "@/components/TipList";
 import { isLang, pickText, t, tf } from "@/i18n";
@@ -41,6 +42,7 @@ export default async function StoryPage({ params }: PageProps<"/[lang]/stories/[
   const dateLine = storyDateLine(story, lang);
   const tags = (story.tags ?? []).filter((k) => STORY_TAG_KEY[k]).map((k) => t(lang, STORY_TAG_KEY[k]));
   const saveIds = guide ? [] : savablePlaceIds(resolved);
+  const coverFallback = STORY_VISUAL[story.type] ?? FALLBACK_VISUAL;
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
@@ -60,7 +62,24 @@ export default async function StoryPage({ params }: PageProps<"/[lang]/stories/[
       </div>
 
       {story.cover_photo ? (
-        <PhotoFrame src={story.cover_photo} alt={title.text} className="-mx-4 aspect-video" />
+        <PhotoFrame
+          src={story.cover_photo}
+          fallback={coverFallback.photo}
+          fallbackLabel={t(lang, "categoryPhotoLabel")}
+          alt={title.text}
+          className="-mx-4 aspect-video"
+        />
+      ) : coverFallback.photo ? (
+        // 표지가 없으면 갈래 대표 사진 — 이 이야기의 사진이 아니므로 구석에 표시
+        <PhotoFrame
+          fallback={coverFallback.photo}
+          fallbackLabel={t(lang, "categoryPhotoLabel")}
+          alt=""
+          Icon={coverFallback.Icon}
+          tone={coverFallback.tone}
+          sizes="(min-width: 1024px) 1152px, 100vw"
+          className="-mx-4 aspect-video lg:aspect-[5/2]"
+        />
       ) : null}
 
       <header className="flex flex-col gap-2">

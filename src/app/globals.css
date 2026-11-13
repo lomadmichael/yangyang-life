@@ -36,7 +36,25 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --font-sans: var(--font-noto-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-sans: "YL Won", var(--font-noto-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+/*
+ * 원화 기호(₩)만 시스템 글꼴로 — Noto Sans KR 의 ₩ 는 가운데 가로획이 한 줄뿐이고 아주 가늘어
+ * 14~16px 에서는 획이 안 보여 「W」로 읽힌다. 맑은 고딕·애플 SD 산돌고딕 Neo 의 ₩ 는 두 줄 획.
+ * 새 글꼴을 내려받지 않는다(local 만). 둘 다 없는 기기(안드로이드 등)는 다음 글꼴(Noto)로 넘어간다.
+ */
+@font-face {
+  font-family: "YL Won";
+  src: local("Malgun Gothic"), local("MalgunGothic"), local("Apple SD Gothic Neo"), local("AppleSDGothicNeo-Regular");
+  font-weight: 100 600;
+  unicode-range: U+20A9;
+}
+@font-face {
+  font-family: "YL Won";
+  src: local("Malgun Gothic Bold"), local("MalgunGothicBold"), local("AppleSDGothicNeo-Bold");
+  font-weight: 700 900;
+  unicode-range: U+20A9;
 }
 
 body {

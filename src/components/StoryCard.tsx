@@ -62,7 +62,7 @@ export function StoryCard({ story, lang, size = "lg" }: { story: Story; lang: La
       {lg && story.cover_photo ? (
         // 모바일: 사진도 같은 곳으로 가는 링크 — 키보드·낭독기에는 아래 제목 링크 하나만 보인다
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block lg:hidden @xl:block">
-          <PhotoFrame src={story.cover_photo} alt="" className="aspect-video w-full" />
+          <PhotoFrame src={story.cover_photo} fallback={visual.photo} alt="" className="aspect-video w-full" />
         </Link>
       ) : null}
       {/* 별은 이 칸 오른쪽 위 — 모바일은 사진 아래 글 칸, PC 는 사진 칸 위 */}
@@ -72,6 +72,7 @@ export function StoryCard({ story, lang, size = "lg" }: { story: Story; lang: La
             <div className="hidden lg:block @xl:hidden">
               <PhotoCard
                 photo={story.cover_photo}
+                fallback={visual.photo}
                 Icon={visual.Icon}
                 tone={visual.tone}
                 eyebrow={STORY_TYPE_KEY[story.type] ? t(lang, STORY_TYPE_KEY[story.type]) : story.type}

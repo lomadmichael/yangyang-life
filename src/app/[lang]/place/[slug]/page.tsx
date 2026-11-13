@@ -8,6 +8,8 @@ import { FallbackNote } from "@/components/FallbackNote";
 import { HoursTable } from "@/components/HoursTable";
 import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
+import { FALLBACK_VISUAL, PLACE_VISUAL } from "@/components/category-visual";
+import { PhotoFrame } from "@/components/PhotoCard";
 import { isAmenityCategory } from "@/components/PlaceCard";
 import { SaveButton } from "@/components/SaveButton";
 import { SafeImage } from "@/components/SafeImage";
@@ -66,6 +68,8 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   const open = isOpenNow(place.hours, place.status, now);
   // 사진은 동의한 참여 가게만 (공개 뷰도 비워 주지만 화면에서 한 번 더 막는다)
   const photos = place.status === "participating" ? place.photos : [];
+  // 자체 사진이 없으면 분류 대표 사진 한 장 — 이 가게 사진이 아니므로 구석에 「분류 대표 사진」 표시
+  const visual = PLACE_VISUAL[place.category] ?? FALLBACK_VISUAL;
 
   return (
     <article className="flex flex-col gap-5 px-4 pb-10">
@@ -85,6 +89,16 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
             />
           ))}
         </div>
+      ) : visual.photo ? (
+        <PhotoFrame
+          fallback={visual.photo}
+          fallbackLabel={t(lang, "categoryPhotoLabel")}
+          alt=""
+          Icon={visual.Icon}
+          tone={visual.tone}
+          sizes="(min-width: 1024px) 1152px, 100vw"
+          className="aspect-video rounded-2xl lg:aspect-[5/2]"
+        />
       ) : null}
 
       <header className="flex flex-col gap-2">
