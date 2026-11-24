@@ -1,9 +1,9 @@
 // 웹앱(PWA) 공용 값과 순수 판정 — 서버·브라우저 어디서 불러도 된다(window·document 를 직접 만지지 않는다).
 
-/** 주소창·작업 전환 화면 색 = globals.css `--sea` 토큰과 같은 값 (tests/pwa.test.ts 가 대조한다) */
-export const THEME_COLOR = "#0f5e8c";
-/** 앱을 여는 순간 바탕 색 = globals.css `--sand` 토큰과 같은 값 */
-export const BACKGROUND_COLOR = "#f7f3ec";
+/** 주소창·작업 전환 화면 색 = globals.css `--sea`(= `--deep` 쪽빛 남색) 토큰과 같은 값 (tests/pwa.test.ts 가 대조한다) */
+export const THEME_COLOR = "#16294f";
+/** 앱을 여는 순간 바탕 색 = globals.css `--sand`(= `--paper` 종이) 토큰과 같은 값 */
+export const BACKGROUND_COLOR = "#f4f0e6";
 
 export type InstallMode =
   /** 아무것도 보이지 않음 — 아직 기기 값을 모르거나(첫 그림) 이미 설치돼 앱으로 실행 중 */

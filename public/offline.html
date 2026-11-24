@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0f5e8c">
+<meta name="theme-color" content="#16294f">
 <meta name="robots" content="noindex">
 <title>양양생활 · 인터넷 연결 없음 / You're offline</title>
 <!--
   서비스 워커(public/sw.js)가 페이지 이동에 실패했을 때만 보여 주는 정적 안내 화면.
-  네트워크 없이 떠야 하므로 글꼴·CSS·스크립트를 밖에서 불러오지 않는다.
+  네트워크 없이 떠야 하므로 글꼴·CSS·스크립트를 밖에서 불러오지 않는다(명조·고딕은 기기 글꼴로).
   색은 src/app/globals.css 토큰과 같은 값만 쓴다:
-  sea #0f5e8c · sea-strong #0a4669 · sea-soft #e6f1f8 · on-sea #ffffff · sand #f7f3ec · surface #ffffff · ink #1d2328 · muted #5f6b75 · line #e2ddd3
+  paper #f4f0e6 · paper-card #f8f4eb · ink #16181a · ink-2 #34383b · deep #16294f · sea-strong #0e1c3a · on-deep #f4f1ea · sunrise #e07a4e · line #d9d1c0
 -->
 <style>
   * { box-sizing: border-box; }
@@ -18,45 +18,46 @@
   body {
     display: flex; align-items: center; justify-content: center;
     min-height: 100vh; padding: 24px 16px;
-    background: #f7f3ec; color: #1d2328;
+    background: #f4f0e6; color: #16181a;
     font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
-    font-size: 16px; font-weight: 400; line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+    font-size: 16px; font-weight: 400; line-height: 1.65;
+    -webkit-font-smoothing: antialiased; word-break: keep-all;
   }
   main {
-    width: 100%; max-width: 420px; padding: 28px 24px;
-    background: #ffffff; border: 1px solid #e2ddd3; border-radius: 16px; text-align: center;
+    width: 100%; max-width: 440px; padding: 32px 28px 28px;
+    background: #f8f4eb; border: 1px solid #16181a; text-align: left;
   }
-  .mark {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 64px; height: 64px; border-radius: 16px; background: #0f5e8c; color: #ffffff;
-  }
-  .brand { margin: 12px 0 0; font-weight: 700; color: #0f5e8c; }
-  section { margin-top: 20px; }
-  section + section { padding-top: 20px; border-top: 1px solid #e2ddd3; }
-  h1 { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.4; }
+  .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 2px solid #16181a; }
+  .brand svg { width: 48px; height: 48px; flex: none; color: #16181a; }
+  .wm { display: block; font-family: "Noto Serif KR", "AppleMyungjo", "Batang", serif; font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+  .en { display: block; margin-top: 6px; font-family: Georgia, "Times New Roman", serif; font-size: 11px; letter-spacing: 0.3em; color: #16294f; }
+  section { margin-top: 22px; }
+  section + section { padding-top: 22px; border-top: 1px solid #d9d1c0; }
+  h1 { margin: 0; font-family: "Noto Serif KR", "AppleMyungjo", "Batang", Georgia, serif; font-size: 21px; font-weight: 600; line-height: 1.4; }
   p { margin: 6px 0 0; }
-  .sub { color: #5f6b75; font-size: 15px; }
+  .sub { color: #34383b; font-size: 15px; }
   button {
     display: flex; align-items: center; justify-content: center; width: 100%;
-    min-height: 48px; margin-top: 24px; padding: 0 16px;
-    border: 0; border-radius: 12px; background: #0f5e8c; color: #ffffff;
-    font: inherit; font-weight: 500; cursor: pointer;
+    min-height: 50px; margin-top: 26px; padding: 0 16px;
+    border: 0; background: #16294f; color: #f4f1ea;
+    font: inherit; font-weight: 600; cursor: pointer;
   }
-  button:hover, button:active { background: #0a4669; }
-  button:focus-visible { outline: 3px solid #0f5e8c; outline-offset: 3px; }
+  button:hover, button:active { background: #0e1c3a; }
+  button:focus-visible { outline: 2px solid #e07a4e; outline-offset: 3px; }
 </style>
 </head>
 <body>
 <main>
-  <span class="mark" aria-hidden="true">
-    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-      <path d="M2.75 9.5c1.6 0 2.4-1.5 4.6-1.5s3 1.5 4.65 1.5 2.45-1.5 4.65-1.5 3 1.5 4.6 1.5" />
-      <path d="M2.75 14c1.6 0 2.4-1.5 4.6-1.5s3 1.5 4.65 1.5 2.45-1.5 4.65-1.5 3 1.5 4.6 1.5" />
-      <path d="M2.75 18.5c1.6 0 2.4-1.5 4.6-1.5s3 1.5 4.65 1.5 2.45-1.5 4.65-1.5 3 1.5 4.6 1.5" />
+  <div class="brand">
+    <svg viewBox="0 0 112 112" fill="none" stroke-linecap="round" aria-hidden="true" focusable="false">
+      <circle cx="56" cy="56" r="54.5" stroke="currentColor" stroke-width="2.4" />
+      <path d="M30 60 A26 26 0 0 1 82 60" stroke="#e07a4e" stroke-width="3.6" />
+      <path d="M14 60 H98" stroke="currentColor" stroke-width="2.4" />
+      <path d="M26 74 q7.5 -5 15 0 t15 0 t15 0 t15 0" stroke="#16294f" stroke-width="2.4" />
+      <path d="M38 86 q7.5 -5 15 0 t15 0 t9 0" stroke="#16294f" stroke-width="2.4" />
     </svg>
-  </span>
-  <p class="brand">양양생활 · YANGYANG LIFE</p>
+    <span><span class="wm">양양생활</span><span class="en">YANGYANG LIFE</span></span>
+  </div>
 
   <section lang="ko">
     <h1>인터넷에 연결되어 있지 않아요</h1>
