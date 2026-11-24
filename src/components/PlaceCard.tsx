@@ -46,8 +46,8 @@ export function PlaceCard({ place, lang, now }: { place: Place; lang: Lang; now:
   );
 
   return (
-    <div className={`@container relative h-full overflow-hidden rounded-2xl border border-line bg-surface ${closed ? "opacity-60" : ""}`}>
-      <Link href={`/${lang}/place/${place.slug}`} className="flex h-full flex-col rounded-2xl active:bg-sea-soft">
+    <div className={`@container relative h-full overflow-hidden border border-rule bg-paper-card ${closed ? "opacity-60" : ""}`}>
+      <Link href={`/${lang}/place/${place.slug}`} className="flex h-full flex-col active:bg-paper-2">
         <div className="hidden lg:block @xl:hidden">
           <PhotoCard
             photo={place.photos?.[0]}
@@ -60,7 +60,7 @@ export function PlaceCard({ place, lang, now }: { place: Place; lang: Lang; now:
         </div>
         <div className="flex flex-1 flex-col p-4 pr-14 lg:pr-4 @xl:pr-14">
           <div className="flex items-start justify-between gap-3 lg:hidden @xl:flex">
-            <h3 className="min-w-0 text-lg font-bold leading-snug">{nameNode}</h3>
+            <h3 className="min-w-0 font-serif text-lg font-semibold leading-snug">{nameNode}</h3>
             {price}
           </div>
           {lang === "en" && !name.fallback ? <p className="text-sm text-muted">{place.name_ko}</p> : null}
@@ -102,7 +102,7 @@ export function PlaceCard({ place, lang, now }: { place: Place; lang: Lang; now:
           </div>
         </div>
       </Link>
-      <div className="absolute right-1.5 top-1.5 rounded-full bg-surface/90">
+      <div className="absolute right-1.5 top-1.5 bg-paper-card/90">
         <SaveButton kind="place" id={place.id} lang={lang} />
       </div>
     </div>

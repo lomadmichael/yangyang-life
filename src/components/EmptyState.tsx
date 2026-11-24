@@ -11,13 +11,13 @@ export function EmptyState({
   action?: { href: string; label: string };
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-line bg-surface px-5 py-8 text-center">
-      <p className="font-bold">{title}</p>
-      {body ? <p className="mt-1 text-sm text-muted">{body}</p> : null}
+    <div className="border-t-2 border-ink bg-paper-card px-5 py-9 text-center">
+      <p className="font-serif text-xl font-semibold lg:text-2xl">{title}</p>
+      {body ? <p className="mt-2 text-base text-ink-2">{body}</p> : null}
       {action ? (
         <Link
           href={action.href}
-          className="mt-4 inline-flex min-h-11 items-center rounded-full border border-sea px-4 text-sm font-medium text-sea"
+          className="mt-5 inline-flex min-h-11 items-center border border-ink px-5 text-base font-semibold text-ink hover:bg-ink hover:text-paper"
         >
           {action.label}
         </Link>
