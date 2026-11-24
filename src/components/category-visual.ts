@@ -1,60 +1,27 @@
-import type { ComponentType } from "react";
-import { placeFallbackPhoto } from "@/lib/place-photos";
-import type { PlaceCategory, PlayCategory, StoryType } from "@/lib/types";
-import {
-  IconBed,
-  IconBook,
-  IconCup,
-  IconFish,
-  IconGlass,
-  IconHome,
-  IconLeaf,
-  IconMountain,
-  IconPin,
-  IconSparkle,
-  IconSun,
-  IconUser,
-  IconUtensils,
-  IconWave,
-} from "./icons";
+import type { PlayCategory, StoryType } from "@/lib/types";
 
-// 사진이 없는 카드에 까는 분류별 그림·바탕색·대표 사진. 색은 토큰 옅은 바탕만 쓴다.
-// photo = public/images 의 분류 대표 사진(출처 public/images/CREDITS.md). 그 장소·행사의 실제 사진이 아니다 —
-// 큰 사진 자리에 쓸 때는 「분류 대표 사진」 표시를 붙인다.
-// 장소는 해변·명소만 대표 사진이 있다 — 가게에 대표 사진을 깔면 그 가게 음식·시설로 오해된다(규칙: lib/place-photos.ts
-// placeUsesCategoryPhoto·placeFallbackPhoto). 가게는 자체 사진이 없으면 색면 표지(magazine.css .noimg).
+// 분류 대표 사진 — public/images 의 사진(출처 public/images/CREDITS.md). 그 행사·이야기의 실제 사진이 아니다 →
+// 큰 사진 자리에 쓸 때는 「분류 대표 사진」 표시를 붙인다. 한 화면에 같은 사진이 반복되면 두 번째부터 색면(.noimg)으로.
+// 장소는 여기 없다 — 해변·명소만 대표 사진을 쓰고 가게는 색면이다(규칙·경로: lib/place-photos.ts placeFallbackPhoto).
 
+/** 사진 틀(PhotoFrame) 바탕색 묶음 이름 */
 export type VisualTone = "sea" | "pine" | "salmon" | "sand";
-export type Visual = { Icon: ComponentType<{ className?: string }>; tone: VisualTone; photo?: string };
-
-export const PLACE_VISUAL: Record<PlaceCategory, Visual> = {
-  food: { Icon: IconUtensils, tone: "salmon" },
-  cafe: { Icon: IconCup, tone: "sand" },
-  stay: { Icon: IconBed, tone: "sea" },
-  surf: { Icon: IconWave, tone: "sea" },
-  bar: { Icon: IconGlass, tone: "salmon" },
-  spot: { photo: placeFallbackPhoto("spot") ?? undefined, Icon: IconMountain, tone: "pine" },
-  life: { Icon: IconPin, tone: "sand" },
-};
-
+export type Visual = { photo?: string };
 
 export const PLAY_VISUAL: Record<PlayCategory, Visual> = {
-  surf: { photo: "/images/play-surf.jpg", Icon: IconWave, tone: "sea" },
-  festival: { photo: "/images/play-festival.jpg", Icon: IconSparkle, tone: "salmon" },
-  eco: { photo: "/images/play-eco.jpg", Icon: IconLeaf, tone: "pine" },
-  hike: { photo: "/images/play-hike.jpg", Icon: IconMountain, tone: "pine" },
-  fishing: { photo: "/images/play-fishing.jpg", Icon: IconFish, tone: "sea" },
-  walk: { photo: "/images/play-walk.jpg", Icon: IconPin, tone: "pine" },
-  yoga: { photo: "/images/play-yoga.jpg", Icon: IconSun, tone: "salmon" },
-  village: { photo: "/images/play-village.jpg", Icon: IconHome, tone: "sand" },
+  surf: { photo: "/images/play-surf.jpg" },
+  festival: { photo: "/images/play-festival.jpg" },
+  eco: { photo: "/images/play-eco.jpg" },
+  hike: { photo: "/images/play-hike.jpg" },
+  fishing: { photo: "/images/play-fishing.jpg" },
+  walk: { photo: "/images/play-walk.jpg" },
+  yoga: { photo: "/images/play-yoga.jpg" },
+  village: { photo: "/images/play-village.jpg" },
 };
 
-/** 이야기 갈래 — 배지 색(코스 salmon · 사람 pine · 가이드 sea)과 맞춘다 */
+/** 이야기 갈래 대표 사진 (표지 사진이 없을 때) */
 export const STORY_VISUAL: Record<StoryType, Visual> = {
-  course: { photo: "/images/story-course.jpg", Icon: IconPin, tone: "salmon" },
-  people: { photo: "/images/story-people.jpg", Icon: IconUser, tone: "pine" },
-  guide: { photo: "/images/story-guide.jpg", Icon: IconBook, tone: "sea" },
+  course: { photo: "/images/story-course.jpg" },
+  people: { photo: "/images/story-people.jpg" },
+  guide: { photo: "/images/story-guide.jpg" },
 };
-
-/** 모르는 값(새 분류가 DB 에 먼저 생긴 경우)도 화면이 무너지지 않게 */
-export const FALLBACK_VISUAL: Visual = { Icon: IconPin, tone: "sea" };

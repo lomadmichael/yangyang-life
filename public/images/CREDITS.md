@@ -12,10 +12,6 @@
 | cover-2.jpg, cover-2-sm.jpg | p3850 | 바들바들 현남생활 마을정원 사진 | 확인 필요 (구름 하늘과 산이 비친 잔잔한 호수) | none |
 | cover-3.jpg, cover-3-sm.jpg | p3880 | 바들바들 현남생활 마을정원 사진 | 확인 필요 (바위 해변과 산 아래 바다) | none |
 | cover-4.jpg, cover-4-sm.jpg | p3943 | 바들바들 현남생활 마을정원 사진 | 확인 필요 (바다 절벽 소나무와 전망대) | none |
-| cat-food.jpg | p2077 | 바들바들 현남생활 2기 포토그래퍼 사진 | 확인 필요 | none |
-| cat-cafe.jpg | p2178 | 바들바들 현남생활 2기 포토그래퍼 사진 | 확인 필요 (원본 유리에 상호 반사 문구가 있어 그 부분은 잘라냄) | none |
-| cat-stay.jpg | p0934 | 현남생활 페스티벌 사진 | 확인 필요 (해변 솔숲 텐트) | none |
-| cat-surf.jpg | p2355 | 바들바들 현남생활 3기 서핑 사진 | 확인 필요 | back_or_far |
 | cat-spot.jpg | p3934 | 바들바들 현남생활 마을정원 사진 | 확인 필요 (아치 다리·등대) | back_or_far (자전거 1인 원경) |
 | play-surf.jpg | p3552 | 바들바들 현남생활 4기 프로그램 사진(보정본) | 확인 필요 | back_or_far |
 | play-festival.jpg | p1054 | 현남생활 페스티벌 사진 | 확인 필요 (솔숲 연회 테이블) | back_or_far (뒷모습 1~2인) |
