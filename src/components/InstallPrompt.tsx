@@ -50,47 +50,40 @@ export function InstallPrompt({ lang }: { lang: Lang }) {
   if (mode === "hidden") return null;
 
   return (
-    <section aria-labelledby="my-install" className="flex gap-3 rounded-2xl border border-line bg-surface p-5" data-testid="my-install">
-      <span aria-hidden="true" className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sea text-on-sea">
-        <IconWave className="size-7" />
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <h2 id="my-install" className="text-lg font-bold">
-          {t(lang, "myInstallTitle")}
-        </h2>
-        <p className="mt-1">{t(lang, "myInstallBody")}</p>
-        {mode === "button" ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await promptInstall();
-              } finally {
-                setBusy(false);
-              }
-            }}
-            className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea active:bg-sea-strong disabled:opacity-60"
-          >
-            {t(lang, "myInstallAction")}
-          </button>
-        ) : (
-          <ol className="mt-3 flex list-decimal flex-col gap-1 pl-5">
-            {mode === "ios" ? (
-              <>
-                <li>{t(lang, "myInstallIosStep1")}</li>
-                <li>{t(lang, "myInstallIosStep2")}</li>
-              </>
-            ) : (
-              <>
-                <li>{t(lang, "myInstallManualStep1")}</li>
-                <li>{t(lang, "myInstallManualStep2")}</li>
-              </>
-            )}
-          </ol>
-        )}
-      </div>
+    <section aria-labelledby="my-install" className="my-box" data-testid="my-install">
+      <h2 id="my-install" className="label">
+        {t(lang, "myInstallTitle")}
+      </h2>
+      <p className="mt-2 text-base text-ink">{t(lang, "myInstallBody")}</p>
+      {mode === "button" ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await promptInstall();
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="mt-4 inline-flex min-h-12 items-center gap-2 bg-deep px-5 font-semibold text-on-deep hover:bg-ink disabled:opacity-60"
+        >
+          <IconWave className="size-5" />
+          {t(lang, "myInstallAction")}
+        </button>
+      ) : (
+        <ol className="mt-3 flex flex-col gap-2">
+          {(mode === "ios" ? (["myInstallIosStep1", "myInstallIosStep2"] as const) : (["myInstallManualStep1", "myInstallManualStep2"] as const)).map(
+            (k, i) => (
+              <li key={k} className="flex gap-3 text-base">
+                <span className="font-display text-2xl italic leading-none text-deep">{i + 1}</span>
+                <span>{t(lang, k)}</span>
+              </li>
+            ),
+          )}
+        </ol>
+      )}
     </section>
   );
 }

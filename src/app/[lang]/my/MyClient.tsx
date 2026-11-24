@@ -2,23 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { ActivityCard } from "@/components/ActivityCard";
 import { Badge } from "@/components/Badge";
-import { EmptyState } from "@/components/EmptyState";
+import { FallbackNote } from "@/components/FallbackNote";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { LangSwitch } from "@/components/LangSwitch";
-import { PlaceCard } from "@/components/PlaceCard";
-import { useSavedSnapshot } from "@/components/SaveButton";
-import { StoryCard } from "@/components/StoryCard";
-import { t, type DictKey, type Lang } from "@/i18n";
-import { formatVerifiedDate } from "@/lib/format";
+import { SaveButton, useSavedSnapshot } from "@/components/SaveButton";
+import { pickText, t, type DictKey, type Lang } from "@/i18n";
+import { activityWhen, formatVerifiedDate } from "@/lib/format";
+import { CATEGORY_KEY, PLAY_CATEGORY_KEY, STORY_TYPE_KEY } from "@/lib/labels";
 import { telHref } from "@/lib/place-photos";
+import { placeName, placeState } from "@/lib/place-view";
 import { parseSaved, type SavedKind, type SavedState } from "@/lib/saved";
 import type { TipKind } from "@/lib/tips";
 import type { Activity, Place, Story } from "@/lib/types";
 import { loadSaved, type MyTip } from "./actions";
 
-// MY 화면(브라우저 쪽). 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
+// MY 화면(브라우저 쪽, v4 잡지 톤 — 작은 꼭지 머리 · 색인형 목록). 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
 // 저장 목록은 ★ 버튼과 같은 localStorage 구독(useSavedSnapshot)을 쓴다 → 어디서 ★를 바꿔도 다시 불러온다.
 // localStorage 가 없거나 막혔거나 값이 망가졌으면 parseSaved 가 빈 상태를 준다 → 빈 화면, 오류 없음.
 
@@ -35,6 +34,8 @@ const TIP_KIND: Record<TipKind, { key: DictKey; tone: "partner" | "info" | "open
   tip: { key: "tipKindTip", tone: "info" },
   directions: { key: "tipKindDirections", tone: "open" },
 };
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 function isEmpty(s: SavedState): boolean {
   return s.place.length === 0 && s.activity.length === 0 && s.story.length === 0;
@@ -54,6 +55,61 @@ function useHydrated(): boolean {
     noopSubscribe,
     () => true,
     () => false,
+  );
+}
+
+/** 저장 색인 한 줄 (장소·놀거리·이야기 공통 모양 — 번호 · 이름 · 분류와 소개 · 오른쪽 상태 · ★) */
+function SavedRow({
+  no,
+  href,
+  title,
+  sub,
+  cat,
+  catClass,
+  text,
+  right,
+  kind,
+  id,
+  lang,
+  dim,
+}: {
+  no: string;
+  href: string;
+  title: { text: string; fallback: boolean };
+  sub?: string | null;
+  cat: string;
+  catClass: string;
+  text?: string;
+  right?: React.ReactNode;
+  kind: SavedKind;
+  id: string;
+  lang: Lang;
+  dim?: boolean;
+}) {
+  return (
+    <li className={`row has-save ${dim ? "is-shut" : ""}`}>
+      <Link href={href}>
+        <span className="no">{no}</span>
+        <div className="min-w-0">
+          <h3>
+            {title.text}
+            {sub ? <small>{sub}</small> : null}
+            <FallbackNote lang={lang} show={title.fallback} />
+          </h3>
+          <p>
+            <span className={`cat ${catClass}`}>
+              <i aria-hidden="true" />
+              {cat}
+            </span>
+            {text}
+          </p>
+        </div>
+        {right ?? <span />}
+      </Link>
+      <span className="row-save">
+        <SaveButton kind={kind} id={id} lang={lang} />
+      </span>
+    </li>
   );
 }
 
@@ -103,160 +159,218 @@ export function MyClient({
   const count = (k: SavedKind) => (loading || empty ? 0 : shown[k].length);
   const current = TABS.find((x) => x.kind === tab) ?? TABS[0];
 
+  const stateLabel = (p: Place) => {
+    const s = placeState(p, now);
+    return s === "shut" ? t(lang, "statusClosed") : s === "open" ? t(lang, "openNow") : s === "later" ? t(lang, "closedNow") : "";
+  };
+
   return (
-    <div className="flex flex-col gap-6 px-4 pb-10">
-      <h1 className="pt-2 text-2xl font-bold">{t(lang, "myTitle")}</h1>
-
-      <section aria-labelledby="my-saved" className="flex flex-col gap-3">
-        <h2 id="my-saved" className="text-lg font-bold">
-          {t(lang, "mySavedTitle")}
-        </h2>
-        <div role="tablist" aria-label={t(lang, "mySavedTabsLabel")} className="flex gap-2">
-          {TABS.map(({ kind, label }) => {
-            const active = kind === tab;
-            return (
-              <button
-                key={kind}
-                type="button"
-                role="tab"
-                id={`my-tab-${kind}`}
-                aria-selected={active}
-                aria-controls="my-panel"
-                onClick={() => setTab(kind)}
-                className={
-                  active
-                    ? "inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full bg-ink px-3 text-sm font-medium text-on-sea"
-                    : "inline-flex min-h-11 flex-1 items-center justify-center gap-1 rounded-full border border-line bg-surface px-3 text-sm text-ink"
-                }
-              >
-                {t(lang, label)}
-                <span className={active ? "font-bold" : "text-muted"}>{count(kind)}</span>
-              </button>
-            );
-          })}
+    <div className="mz-my">
+      <section className="sec page-head">
+        <div className="wrap">
+          <header className="sec-head">
+            <span className="sec-no">My</span>
+            <div>
+              <span className="label">{t(lang, "myKicker")}</span>
+              <h1>{t(lang, "myHeadTitle")}</h1>
+            </div>
+            <p>{t(lang, "myDeviceNote")}</p>
+          </header>
         </div>
-
-        <div id="my-panel" role="tabpanel" aria-labelledby={`my-tab-${tab}`} data-testid="my-saved">
-          {loading ? (
-            <p className="py-8 text-center text-sm text-muted">{t(lang, "myLoading")}</p>
-          ) : failed ? (
-            <p className="py-8 text-center text-sm text-muted">{t(lang, "myLoadFailed")}</p>
-          ) : shown[tab].length === 0 ? (
-            <EmptyState
-              title={t(lang, "myEmptyTitle")}
-              body={t(lang, "myEmptyBody")}
-              action={{ href: `/${lang}${current.path}`, label: t(lang, current.browse) }}
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {tab === "place"
-                ? shown.place.map((p) => (
-                    <li key={p.id}>
-                      <PlaceCard place={p} lang={lang} now={now} />
-                    </li>
-                  ))
-                : tab === "activity"
-                  ? shown.activity.map((a) => (
-                      <li key={a.id}>
-                        <ActivityCard activity={a} lang={lang} />
-                      </li>
-                    ))
-                  : shown.story.map((s) => (
-                      <li key={s.id}>
-                        <StoryCard story={s} lang={lang} size="sm" />
-                      </li>
-                    ))}
-            </ul>
-          )}
-        </div>
-        <p className="text-sm text-muted">{t(lang, "myDeviceNote")}</p>
       </section>
 
-      <section aria-labelledby="my-tips" className="flex flex-col gap-3 border-t border-line pt-5">
-        <h2 id="my-tips" className="text-lg font-bold">
-          {t(lang, "myTipsTitle")}
-          {tips && tips.length > 0 ? <span className="ml-1 text-muted">{tips.length}</span> : null}
-        </h2>
-        {tips === null ? (
-          <p className="text-sm text-muted">{t(lang, "myTipsFailed")}</p>
-        ) : tips.length === 0 ? (
-          <p className="text-sm text-muted">{t(lang, "myTipsEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-3" data-testid="my-tips">
-            {tips.map((tip) => {
-              const kind = TIP_KIND[tip.kind];
-              return (
-                <li key={tip.id} className="rounded-2xl border border-line bg-surface px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <Badge tone={kind.tone}>{t(lang, kind.key)}</Badge>
-                    {tip.handled && tip.kind === "changed" ? (
-                      <Badge tone="muted">{t(lang, "tipHandled")}</Badge>
-                    ) : null}
-                    {tip.target_name && tip.target_path ? (
-                      <Link href={tip.target_path} className="inline-flex min-h-11 items-center font-medium text-sea">
-                        {tip.target_name}
+      <section className="sec page-body">
+        <div className="wrap my-grid">
+          <div className="my-main">
+            <section aria-labelledby="my-saved" className="my-sec">
+              <header className="grp-h">
+                <span className="gno">01</span>
+                <div>
+                  <h2 id="my-saved">{t(lang, "mySavedTitle")}</h2>
+                </div>
+                <span className="gcount" />
+              </header>
+              <div role="tablist" aria-label={t(lang, "mySavedTabsLabel")} className="tabs my-tabs">
+                {TABS.map(({ kind, label }) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    role="tab"
+                    id={`my-tab-${kind}`}
+                    aria-selected={kind === tab}
+                    aria-controls="my-panel"
+                    onClick={() => setTab(kind)}
+                  >
+                    {t(lang, label)}
+                    <sup>{count(kind)}</sup>
+                  </button>
+                ))}
+              </div>
+
+              <div id="my-panel" role="tabpanel" aria-labelledby={`my-tab-${tab}`} data-testid="my-saved">
+                {loading ? (
+                  <p className="my-note">{t(lang, "myLoading")}</p>
+                ) : failed ? (
+                  <p className="my-note">{t(lang, "myLoadFailed")}</p>
+                ) : shown[tab].length === 0 ? (
+                  <div className="my-empty">
+                    <span className="star" aria-hidden="true">
+                      ★
+                    </span>
+                    <div>
+                      <b>{t(lang, "myEmptyTitle")}</b>
+                      <p>{t(lang, "myEmptyBody")}</p>
+                      <Link className="btn-line" href={`/${lang}${current.path}`}>
+                        {t(lang, current.browse)}
                       </Link>
-                    ) : (
-                      <span className="text-muted">{t(lang, "myTipTargetGone")}</span>
-                    )}
+                    </div>
                   </div>
-                  <p className="mt-1 whitespace-pre-line">{tip.body}</p>
-                  <time dateTime={tip.created_at} className="mt-1 block text-sm text-muted">
-                    {formatVerifiedDate(tip.created_at, lang)}
-                  </time>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                ) : (
+                  <ol className="rows">
+                    {tab === "place"
+                      ? shown.place.map((p, i) => {
+                          const name = placeName(p, lang);
+                          const sm = pickText(p as unknown as Record<string, unknown>, "summary", lang);
+                          const s = placeState(p, now);
+                          return (
+                            <SavedRow
+                              key={p.id}
+                              no={pad(i + 1)}
+                              href={`/${lang}/place/${p.slug}`}
+                              title={name}
+                              sub={name.sub}
+                              cat={CATEGORY_KEY[p.category] ? t(lang, CATEGORY_KEY[p.category]) : p.category}
+                              catClass={`cat-${p.category}`}
+                              text={sm.text}
+                              right={
+                                s === "none" ? undefined : (
+                                  <span className={`st ${s}`}>
+                                    <i aria-hidden="true" />
+                                    {stateLabel(p)}
+                                  </span>
+                                )
+                              }
+                              kind="place"
+                              id={p.id}
+                              lang={lang}
+                              dim={s === "shut"}
+                            />
+                          );
+                        })
+                      : tab === "activity"
+                        ? shown.activity.map((a, i) => {
+                            const r = a as unknown as Record<string, unknown>;
+                            const when = activityWhen(a, lang);
+                            return (
+                              <SavedRow
+                                key={a.id}
+                                no={pad(i + 1)}
+                                href={`/${lang}/activity/${a.id}`}
+                                title={pickText(r, "title", lang)}
+                                cat={PLAY_CATEGORY_KEY[a.category] ? t(lang, PLAY_CATEGORY_KEY[a.category]) : a.category}
+                                catClass={`play-${a.category}`}
+                                text={pickText(r, "desc", lang).text}
+                                right={when ? <span className="when"><b>{when}</b></span> : undefined}
+                                kind="activity"
+                                id={a.id}
+                                lang={lang}
+                              />
+                            );
+                          })
+                        : shown.story.map((s, i) => {
+                            const r = s as unknown as Record<string, unknown>;
+                            return (
+                              <SavedRow
+                                key={s.id}
+                                no={pad(i + 1)}
+                                href={`/${lang}/stories/${s.slug}`}
+                                title={pickText(r, "title", lang)}
+                                cat={STORY_TYPE_KEY[s.type] ? t(lang, STORY_TYPE_KEY[s.type]) : s.type}
+                                catClass={`story-${s.type}`}
+                                text={pickText(r, "summary", lang).text}
+                                kind="story"
+                                id={s.id}
+                                lang={lang}
+                              />
+                            );
+                          })}
+                  </ol>
+                )}
+              </div>
+            </section>
+
+            <section aria-labelledby="my-tips" className="my-sec">
+              <header className="grp-h">
+                <span className="gno">02</span>
+                <div>
+                  <h2 id="my-tips">{t(lang, "myTipsTitle")}</h2>
+                </div>
+                <span className="gcount">{tips && tips.length > 0 ? tips.length : null}</span>
+              </header>
+              {tips === null ? (
+                <p className="my-note">{t(lang, "myTipsFailed")}</p>
+              ) : tips.length === 0 ? (
+                <p className="my-note">{t(lang, "myTipsEmpty")}</p>
+              ) : (
+                <ul className="my-tips" data-testid="my-tips">
+                  {tips.map((tip) => {
+                    const kind = TIP_KIND[tip.kind];
+                    return (
+                      <li key={tip.id}>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <Badge tone={kind.tone}>{t(lang, kind.key)}</Badge>
+                          {tip.handled && tip.kind === "changed" ? <Badge tone="muted">{t(lang, "tipHandled")}</Badge> : null}
+                          {tip.target_name && tip.target_path ? (
+                            <Link href={tip.target_path} className="tg">
+                              {tip.target_name}
+                            </Link>
+                          ) : (
+                            <span className="text-ink-2">{t(lang, "myTipTargetGone")}</span>
+                          )}
+                          <time dateTime={tip.created_at} className="ml-auto text-sm text-ink-2">
+                            {formatVerifiedDate(tip.created_at, lang)}
+                          </time>
+                        </div>
+                        <p className="whitespace-pre-line">{tip.body}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          <aside className="my-side">
+            <section aria-labelledby="my-lang" className="my-box">
+              <h2 id="my-lang" className="label">
+                {t(lang, "myLangTitle")}
+              </h2>
+              <LangSwitch lang={lang} />
+            </section>
+
+            <InstallPrompt lang={lang} />
+
+            <section className="my-join">
+              <span className="label">{t(lang, "myJoinKicker")}</span>
+              <h2>{t(lang, "myJoinTitle")}</h2>
+              <p>{t(lang, "myJoinBody")}</p>
+              <Link className="btn-solid light" href={`/${lang}/makers`}>
+                {t(lang, "myJoinAction")}
+              </Link>
+              {contactPhone ? (
+                <p className="tel-line">
+                  <span>{t(lang, "myContactLabel")}</span>
+                  <a href={telHref(contactPhone)}>{contactPhone}</a>
+                </p>
+              ) : null}
+            </section>
+
+            <p className="my-admin">
+              <Link href="/admin/login">{t(lang, "myAdminLogin")}</Link>
+            </p>
+          </aside>
+        </div>
       </section>
-
-      <section aria-labelledby="my-lang" className="flex items-center justify-between gap-3 border-t border-line pt-5">
-        <h2 id="my-lang" className="text-lg font-bold">
-          {t(lang, "myLangTitle")}
-        </h2>
-        <LangSwitch lang={lang} />
-      </section>
-
-      <InstallPrompt lang={lang} />
-
-      <section className="rounded-2xl bg-sea-soft p-5">
-        <h2 className="text-lg font-bold text-sea">{t(lang, "myJoinTitle")}</h2>
-        <p className="mt-1 text-sm">{t(lang, "myJoinBody")}</p>
-        <Link
-          href={`/${lang}/makers`}
-          className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea"
-        >
-          {t(lang, "myJoinAction")}
-        </Link>
-        {contactPhone ? (
-          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-sm">
-            <span>{t(lang, "myContactLabel")}</span>
-            <a href={telHref(contactPhone)} className="inline-flex min-h-11 items-center font-bold text-sea underline underline-offset-4">
-              {contactPhone}
-            </a>
-          </p>
-        ) : null}
-      </section>
-
-      <Link
-        href={`/${lang}/makers`}
-        className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-surface px-4 active:bg-sea-soft"
-      >
-        <span>
-          <span className="block font-bold">{t(lang, "myMakersLink")}</span>
-          <span className="block text-sm text-muted">{t(lang, "myMakersSub")}</span>
-        </span>
-        <span aria-hidden="true" className="text-muted">
-          ›
-        </span>
-      </Link>
-
-      <p className="text-center">
-        <Link href="/admin/login" className="inline-flex min-h-11 items-center px-3 text-xs text-muted underline">
-          {t(lang, "myAdminLogin")}
-        </Link>
-      </p>
     </div>
   );
 }

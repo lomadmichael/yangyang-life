@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { BackLink } from "@/components/BackLink";
-import { EmptyState } from "@/components/EmptyState";
 import { isLang, t, tf } from "@/i18n";
+import { storiesQueryString } from "@/lib/list-query";
 import { listContributors, listStories } from "@/lib/queries";
 import type { Contributor } from "@/lib/types";
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// 만든 사람들 (v4 「바다 잡지」 05 꼭지 — 잡지의 판권·기여자 지면) —
+// 꼭지 머리 · 팀별 기여자 명단(이름 · 맡은 일 · 기수 · 쓴 이야기 수 — 모두 DB 값) · 참여 안내(남색 단).
 export default async function MakersPage({ params }: PageProps<"/[lang]/makers">) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
@@ -29,52 +32,73 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pb-10">
-      <BackLink href={`/${lang}`} label={t(lang, "backHome")} />
-      <div>
-        <h1 className="text-2xl font-bold">{t(lang, "makersTitle")}</h1>
-        <p className="mt-1 text-muted">{t(lang, "makersIntro")}</p>
-      </div>
+    <div className="mz-makers">
+      <section className="sec page-head">
+        <div className="wrap">
+          <header className="sec-head">
+            <span className="sec-no">05</span>
+            <div>
+              <span className="label">{t(lang, "secMakersKicker")}</span>
+              <h1>{t(lang, "makersTitle")}</h1>
+            </div>
+            <p>{t(lang, "makersIntro")}</p>
+          </header>
+        </div>
+      </section>
 
-      {people.length === 0 ? (
-        <EmptyState title={t(lang, "emptyMakersTitle")} />
-      ) : (
-        [...teams].map(([team, members]) => (
-          <section key={team} className="flex flex-col gap-2">
-            <h2 className="font-bold text-pine">{team}</h2>
-            <ul className="rounded-2xl border border-line bg-surface px-4">
-              {members.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-baseline justify-between gap-3 border-b border-line py-3 last:border-b-0"
-                >
-                  <span className="flex items-baseline gap-2">
-                    <span className="font-medium">{m.display_name}</span>
-                    {counts.get(m.id) ? (
-                      <Link href={`/${lang}/stories?author=${m.id}`} className="text-sm font-medium text-sea underline">
-                        {tf(lang, "makersStories", { n: String(counts.get(m.id)) })}
-                      </Link>
-                    ) : null}
-                  </span>
-                  <span className="text-right text-sm text-muted">
-                    {[m.role_label, m.cohort].filter((v) => v && v.trim()).join(" · ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
+      <section className="sec page-body">
+        <div className="wrap">
+          {people.length === 0 ? (
+            <div className="pl-empty">
+              <span className="label">{t(lang, "secMakersKicker")}</span>
+              <h2>{t(lang, "emptyMakersTitle")}</h2>
+            </div>
+          ) : (
+            <>
+              <p className="mk-total">
+                <b>{people.length}</b>
+                {t(lang, people.length === 1 ? "makersTotalUnitOne" : "makersTotalUnit")}
+              </p>
+              <div className="mk-teams">
+                {[...teams].map(([team, members], ti) => (
+                  <section key={team} className="mk-team" aria-labelledby={`team-${ti}`}>
+                    <header>
+                      <span className="gno">{pad(ti + 1)}</span>
+                      <h2 id={`team-${ti}`}>{team}</h2>
+                      <span className="gcount">{tf(lang, "unitPeople", { n: String(members.length) })}</span>
+                    </header>
+                    <ul>
+                      {members.map((m) => {
+                        const role = [m.role_label, m.cohort].filter((v) => v && v.trim()).join(" · ");
+                        const n = counts.get(m.id);
+                        return (
+                          <li key={m.id}>
+                            <b>{m.display_name}</b>
+                            {role ? <span className="role">{role}</span> : null}
+                            {n ? (
+                              <Link href={`/${lang}/stories${storiesQueryString({ author: m.id })}`} className="more">
+                                {tf(lang, "makersStories", { n: String(n) })}
+                              </Link>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            </>
+          )}
+
+          <section className="my-join mk-join">
+            <span className="label">{t(lang, "myJoinKicker")}</span>
+            <h2>{t(lang, "makersJoinTitle")}</h2>
+            <p>{t(lang, "makersJoinBody")}</p>
+            <Link className="btn-solid light" href={`/${lang}/places`}>
+              {t(lang, "makersJoinAction")}
+            </Link>
           </section>
-        ))
-      )}
-
-      <section className="rounded-2xl bg-sea-soft p-5">
-        <h2 className="text-lg font-bold text-sea">{t(lang, "makersJoinTitle")}</h2>
-        <p className="mt-1 text-sm">{t(lang, "makersJoinBody")}</p>
-        <Link
-          href={`/${lang}/places`}
-          className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea"
-        >
-          {t(lang, "makersJoinAction")}
-        </Link>
+        </div>
       </section>
     </div>
   );
