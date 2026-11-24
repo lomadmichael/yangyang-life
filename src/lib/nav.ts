@@ -30,15 +30,18 @@ export function activeTab(pathname: string): Tab | null {
   return SECTION[first] ?? null;
 }
 
+/** 화면 가득 표지가 있는 상세 화면의 경로 첫 마디 — 장소·놀거리·이야기 상세 */
+const COVER_DETAIL = new Set(["place", "activity", "stories"]);
+
 /**
- * 화면 맨 위가 사진 표지(머리 메뉴가 투명 + 흰 글자로 겹쳐 앉는 화면)인지 — 홈 표지, 장소 상세의 큰 사진.
- * 이런 화면에는 머리 메뉴 아래 빈칸을 두지 않는다.
+ * 화면 맨 위가 사진 표지(머리 메뉴가 투명 + 흰 글자로 겹쳐 앉는 화면)인지 — 홈 표지, 장소·놀거리·이야기 상세의 큰 표지.
+ * 이런 화면에는 머리 메뉴 아래 빈칸을 두지 않는다. (이야기 목록 /stories 는 표지가 없다)
  */
 export function hasCoverHero(pathname: string): boolean {
   const parts = pathname.split("/");
   const first = parts[2] ?? "";
   if (first === "") return true;
-  return first === "place" && !!parts[3];
+  return COVER_DETAIL.has(first) && !!parts[3];
 }
 
 /** 영어 메뉴판(QR 착지 /[lang]/m/[code]) — 주 메뉴를 그리지 않는다 */

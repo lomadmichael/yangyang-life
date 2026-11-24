@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  bigDateRange,
   formatDateRange,
   formatToday,
   formatVerifiedDate,
@@ -90,5 +91,20 @@ describe("seasonLabel", () => {
     expect(seasonLabel([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], "ko")).toBe("1월~12월");
     expect(seasonLabel([], "ko")).toBeNull();
     expect(seasonLabel([0, 13], "en")).toBeNull();
+  });
+});
+
+describe("bigDateRange (놀거리 큰 날짜)", () => {
+  it("시작·끝", () => {
+    expect(bigDateRange("2026-10-25", "2026-11-30")).toEqual({ from: "10.25", to: "11.30" });
+  });
+  it("하루짜리는 to 없음, 달·날은 두 자리", () => {
+    expect(bigDateRange("2026-03-01", "2026-03-01")).toEqual({ from: "03.01", to: null });
+  });
+  it("한쪽만 있거나 없으면", () => {
+    expect(bigDateRange("2026-10-25", null)).toEqual({ from: "10.25", to: null });
+    expect(bigDateRange(null, "2026-11-30")).toEqual({ from: null, to: "11.30" });
+    expect(bigDateRange(null, null)).toBeNull();
+    expect(bigDateRange("bad", null)).toBeNull();
   });
 });

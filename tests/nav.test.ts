@@ -2,13 +2,21 @@ import { describe, expect, it } from "vitest";
 import { activeTab, hasCoverHero, isMenuBoardPath, NAV_TABS } from "../src/lib/nav";
 
 describe("hasCoverHero", () => {
-  it("홈과 장소 상세만 사진 표지", () => {
+  it("홈과 장소·놀거리·이야기 상세만 화면 가득 표지", () => {
     expect(hasCoverHero("/ko")).toBe(true);
     expect(hasCoverHero("/en/")).toBe(true);
     expect(hasCoverHero("/ko/place/hyuhyuam")).toBe(true);
+    expect(hasCoverHero("/en/activity/1")).toBe(true);
+    expect(hasCoverHero("/ko/stories/first-day")).toBe(true);
+  });
+  it("목록·MY·만든 사람들·메뉴판은 표지 없음", () => {
     expect(hasCoverHero("/ko/places")).toBe(false);
     expect(hasCoverHero("/ko/place")).toBe(false);
-    expect(hasCoverHero("/en/activity/1")).toBe(false);
+    expect(hasCoverHero("/ko/play")).toBe(false);
+    expect(hasCoverHero("/ko/stories")).toBe(false);
+    expect(hasCoverHero("/ko/my")).toBe(false);
+    expect(hasCoverHero("/ko/makers")).toBe(false);
+    expect(hasCoverHero("/en/m/ABC123")).toBe(false);
   });
 });
 
