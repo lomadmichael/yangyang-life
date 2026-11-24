@@ -29,25 +29,18 @@ function LangLinks({ lang, query }: { lang: Lang; query: string }) {
   const qs = query ? `?${query}` : "";
 
   return (
-    <nav aria-label={t(lang, "langSwitchLabel")} className="flex gap-1 text-sm">
-      {LANGS.map((l) => {
-        const active = l === lang;
-        return (
-          <Link
-            key={l}
-            href={`/${l}${rest ? `/${rest}` : ""}${qs}`}
-            hrefLang={l}
-            aria-current={active ? "true" : undefined}
-            className={
-              active
-                ? "inline-flex min-h-11 items-center rounded-full bg-sea px-3 font-medium text-on-sea"
-                : "inline-flex min-h-11 items-center rounded-full px-3 text-muted hover:text-ink"
-            }
-          >
-            {t(lang, l === "ko" ? "langKo" : "langEn")}
-          </Link>
-        );
-      })}
+    // 네모 칸 두 개(v4) — 테두리·글자는 부모 글자색(currentColor)을 따른다. 표지 위에서는 흰색(magazine.css .lang-sw)
+    <nav aria-label={t(lang, "langSwitchLabel")} className="lang-sw">
+      {LANGS.map((l) => (
+        <Link
+          key={l}
+          href={`/${l}${rest ? `/${rest}` : ""}${qs}`}
+          hrefLang={l}
+          aria-current={l === lang ? "true" : undefined}
+        >
+          {t(lang, l === "ko" ? "langKo" : "langEn")}
+        </Link>
+      ))}
     </nav>
   );
 }
