@@ -1017,9 +1017,10 @@
     font-size: 250px;
     line-height: 1;
     letter-spacing: -0.05em;
+    /* 속은 비우고 테두리만 — 테두리 색을 currentColor 로 두면 color:transparent 를 따라 사라진다(시안 style.css 도 같은 상태였다) */
     color: transparent;
-    -webkit-text-stroke: 1.2px currentColor;
-    opacity: 0.45;
+    -webkit-text-stroke: 1.2px var(--on-sea);
+    opacity: 0.32;
   }
   .rep {
     position: absolute;

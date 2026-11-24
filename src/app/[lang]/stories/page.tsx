@@ -204,7 +204,10 @@ function Card({ story, lang }: { story: Story; lang: Lang }) {
             <span className="glyph" aria-hidden="true">
               {title.text.charAt(0)}
             </span>
-            {story.cover_photo ? null : <span className="nm">{title.text}</span>}
+            {/* 표지가 없으면 색면 위 큰 제목. 표지가 있으면 사진이 덮고, 못 불러오면 드러난다 */}
+            <span className="nm" aria-hidden={story.cover_photo ? true : undefined}>
+              {title.text}
+            </span>
           </span>
           {story.cover_photo ? (
             <SafeImage src={photoUrl(story.cover_photo)} alt="" className="absolute inset-0 h-full w-full object-cover" />

@@ -131,10 +131,7 @@ export default async function StoryPage({ params }: PageProps<"/[lang]/stories/[
           <div className="ph-title">
             <div>
               <span className="p-no rise">{[typeLabel, ...tags].join(" · ")}</span>
-              <h1 className={`rise d1 ${coverTitleSize(title.text)}`}>
-                {title.text}
-                <FallbackNote lang={lang} show={title.fallback} />
-              </h1>
+              <h1 className={`rise d1 ${coverTitleSize(title.text)}`}>{title.text}</h1>
             </div>
             <div className="ph-side rise d2">
               {summary.text ? (

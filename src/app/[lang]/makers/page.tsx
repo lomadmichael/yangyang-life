@@ -65,7 +65,7 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
                     <header>
                       <span className="gno">{pad(ti + 1)}</span>
                       <h2 id={`team-${ti}`}>{team}</h2>
-                      <span className="gcount">{tf(lang, "unitPeople", { n: String(members.length) })}</span>
+                      <span className="gcount">{tf(lang, members.length === 1 ? "makersTeamCountOne" : "makersTeamCount", { n: String(members.length) })}</span>
                     </header>
                     <ul>
                       {members.map((m) => {
@@ -77,7 +77,7 @@ export default async function MakersPage({ params }: PageProps<"/[lang]/makers">
                             {role ? <span className="role">{role}</span> : null}
                             {n ? (
                               <Link href={`/${lang}/stories${storiesQueryString({ author: m.id })}`} className="more">
-                                {tf(lang, "makersStories", { n: String(n) })}
+                                {tf(lang, n === 1 ? "makersStoriesOne" : "makersStories", { n: String(n) })}
                               </Link>
                             ) : null}
                           </li>

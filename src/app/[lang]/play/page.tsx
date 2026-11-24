@@ -242,10 +242,7 @@ function Featured({ items, lang }: { items: Item[]; lang: Lang }) {
           <span className="tx">
             <BigDate a={it.a} className="on-photo" />
             <span className="label">{label}</span>
-            <h3>
-              {title.text}
-              <FallbackNote lang={lang} show={title.fallback} />
-            </h3>
+            <h3>{title.text}</h3>
             {size === "big" && desc.text ? <p>{desc.text}</p> : null}
           </span>
         </Link>

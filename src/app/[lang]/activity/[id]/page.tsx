@@ -99,10 +99,7 @@ export default async function ActivityPage({ params }: PageProps<"/[lang]/activi
           <div className="ph-title">
             <div>
               <span className="p-no rise">{[cat, activity.rainy_ok ? t(lang, "rainyOk") : null].filter(Boolean).join(" — ")}</span>
-              <h1 className={`rise d1 ${coverTitleSize(title.text)}`}>
-                {title.text}
-                <FallbackNote lang={lang} show={title.fallback} />
-              </h1>
+              <h1 className={`rise d1 ${coverTitleSize(title.text)}`}>{title.text}</h1>
             </div>
             <div className="ph-side rise d2">
               {big ? (

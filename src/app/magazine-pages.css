@@ -733,6 +733,9 @@
     border-top: 2px solid var(--ink);
     padding-top: 16px;
   }
+  .my-box .lang-sw {
+    display: inline-flex;
+  }
   .my-box .label {
     display: block;
     margin: 0 0 12px;
