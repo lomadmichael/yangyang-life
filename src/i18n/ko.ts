@@ -238,6 +238,13 @@ export const ko = {
   myMakersLink: "만든 사람들",
   myMakersSub: "양양생활을 함께 만든 사람들",
   myContactLabel: "참여 문의",
+  myInstallTitle: "홈 화면에 추가",
+  myInstallBody: "홈 화면 아이콘을 누르면 양양생활이 앱처럼 바로 열려요.",
+  myInstallAction: "홈 화면에 추가",
+  myInstallIosStep1: "사파리의 공유 버튼(네모에 위쪽 화살표)을 눌러요",
+  myInstallIosStep2: "「홈 화면에 추가」를 누르면 끝이에요",
+  myInstallManualStep1: "브라우저 메뉴(⋮ 또는 ≡)를 열어요",
+  myInstallManualStep2: "「홈 화면에 추가」 또는 「앱 설치」를 눌러요",
   myAdminLogin: "관리자 로그인",
   emptyMakersTitle: "아직 소개할 사람이 없어요",
 

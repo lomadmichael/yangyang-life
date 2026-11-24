@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ActivityCard } from "@/components/ActivityCard";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { LangSwitch } from "@/components/LangSwitch";
 import { PlaceCard } from "@/components/PlaceCard";
 import { useSavedSnapshot } from "@/components/SaveButton";
@@ -216,6 +217,8 @@ export function MyClient({
         </h2>
         <LangSwitch lang={lang} />
       </section>
+
+      <InstallPrompt lang={lang} />
 
       <section className="rounded-2xl bg-sea-soft p-5">
         <h2 className="text-lg font-bold text-sea">{t(lang, "myJoinTitle")}</h2>

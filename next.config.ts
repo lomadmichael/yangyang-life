@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // 서비스 워커 파일은 늘 새로 받는다 — 고친 sw.js 가 브라우저 캐시에 막히지 않게 (docs/01-app/02-guides/progressive-web-apps.md)
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+      },
+    ];
+  },
   // v2 에서 옛 주소 /eat → /places, /do → /play (308, 쿼리 ?cat=…&open=1 은 Next 가 그대로 넘긴다)
   async redirects() {
     return [

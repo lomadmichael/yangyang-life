@@ -239,6 +239,13 @@ export const en = {
   myMakersLink: "Who made this",
   myMakersSub: "The people behind YANGYANG LIFE",
   myContactLabel: "Questions about joining",
+  myInstallTitle: "Add to Home Screen",
+  myInstallBody: "Tap the icon on your home screen to open YANGYANG LIFE just like an app.",
+  myInstallAction: "Add to Home Screen",
+  myInstallIosStep1: "Tap the Share button in Safari (a square with an up arrow)",
+  myInstallIosStep2: "Choose “Add to Home Screen” and you're done",
+  myInstallManualStep1: "Open your browser menu (⋮ or ≡)",
+  myInstallManualStep2: "Choose “Add to Home Screen” or “Install app”",
   myAdminLogin: "Admin login",
   emptyMakersTitle: "No one to introduce yet",
 
