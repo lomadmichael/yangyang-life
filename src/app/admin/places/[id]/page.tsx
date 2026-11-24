@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NON_DINING_CATEGORIES, isUuid } from "@/lib/admin-input";
 import { photoUrl } from "@/lib/format";
+import { canShowPlacePhotos } from "@/lib/place-photos";
 import { can } from "@/lib/permissions";
 import { translationAvailable } from "@/lib/translate";
 import { requireAdmin } from "../../auth";
@@ -74,11 +75,11 @@ export default async function EditPlacePage({ params }: PageProps<"/admin/places
       ) : null}
 
       <Card title="사진">
-        {participating ? (
+        {canShowPlacePhotos(place) ? (
           <PhotoManager placeId={place.id} photos={place.photos.map((name) => ({ name, url: photoUrl(name) }))} />
         ) : (
           <p className="text-sm text-muted">
-            사진은 사장님이 동의한 「참여 가게」만 올릴 수 있어요. 위 「상태」를 참여 가게로 바꾸고 저장하면 업로드 칸이 열려요.
+            사진은 사장님이 동의한 「참여 가게」와 해변·명소만 올릴 수 있어요. 위 「상태」를 참여 가게로 바꾸고 저장하면 업로드 칸이 열려요.
           </p>
         )}
       </Card>

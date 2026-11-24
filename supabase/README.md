@@ -25,3 +25,9 @@ security_invoker 뷰 + anon 에게 원본 테이블 컬럼 단위 GRANT. 이 방
 놀거리에 분류 8종 `category`(기존 행은 요가 → `yoga`, 기간 행사 → `festival`, 나머지 → `village` 로 채움)와 운영하는 달 `season_months`(빈 배열 = 사계절)를 더한다.
 기여자 역할에 `editor`(콘텐츠 수정 + 이야기 공개)를 더하고, 이야기 `stories` 테이블(본문은 `blocks` jsonb 배열, 상태 `draft → review → returned/published`)을 새로 만든다 — 원본은 0002 와 같이 anon 권한 0.
 공개 창구는 `stories_public`(공개된 이야기만, 검토 메모·상태 제외) 하나이고, `places_public`·`activities_public` 은 새 칸을 맨 끝에 붙여 `create or replace`, `tips_public` 은 팁 대상 `story` 의 샘플 판정을 더해 다시 만든다. 한 트랜잭션으로 적용된다.
+
+## 0004 — 전화번호·해변 사진 (`0004_phone_spot_photos.sql`)
+
+장소에 전화번호 `phone`(선택, 숫자·하이픈 8~20자 check)을 더하고 `places_public` 맨 끝에 붙인다.
+`places_public.photos` 는 칸 이름·타입은 그대로 두고 노출 규칙만 「참여 가게」에서 「참여 가게 **또는** 해변·명소(`category='spot'`)」로 넓힌다 — 해변·명소는 동의할 사장님이 없는 풍경 사진이라서. 앱 화면(공개 상세·관리 사진 업로드)의 같은 판정은 `src/lib/place-photos.ts`.
+적용 전 DB 에서도 앱은 돌아간다: 공개 화면은 `phone` 이 없으면 전화 줄을 숨기고, 관리 저장은 전화가 비어 있으면 `phone` 칸을 보내지 않는다(전화를 적어 저장하는 것만 0004 적용 후에 된다). 한 트랜잭션.

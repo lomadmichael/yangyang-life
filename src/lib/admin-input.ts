@@ -156,7 +156,34 @@ export type PlaceRow = Omit<
   | "created_by_name"
   | "has_english_menu"
   | "is_sample"
->;
+  | "phone"
+> & {
+  /** 비어 있으면 칸 자체가 없다 — 0004(places.phone) 적용 전 DB 에서도 기존 저장이 되게 (placeWriteRow) */
+  phone?: string;
+};
+
+const PHONE_RE = /^[0-9-]{8,20}$/;
+
+/** 전화번호: 공백은 하이픈으로, 숫자·하이픈 8~20자(0004 places_phone_check 와 같게) + 숫자 7개 이상. 비면 null */
+function parsePhone(v: unknown): Parsed<string | null> {
+  const s = (typeof v === "string" || typeof v === "number" ? String(v) : "").trim().replace(/\s+/g, "-");
+  if (!s) return ok(null);
+  if (!PHONE_RE.test(s) || s.replace(/[^0-9]/g, "").length < 7) {
+    return bad("전화번호는 숫자와 하이픈만 8~20자로 (예: 033-671-1234)");
+  }
+  return ok(s);
+}
+
+/**
+ * DB 에 보낼 장소 행 — 전화가 비어 있으면 phone 칸을 빼서 0004 적용 전 DB 에서도 저장된다.
+ * 단, 원래 전화가 있던 장소(hadPhone)에서 지운 경우엔 null 로 보내 지운다(그 DB 는 이미 0004 적용됨).
+ */
+export function placeWriteRow(row: PlaceRow, hadPhone: boolean): PlaceRow | (Omit<PlaceRow, "phone"> & { phone: null }) {
+  if (row.phone) return row;
+  const { phone: _omit, ...rest } = row;
+  void _omit;
+  return hadPhone ? { ...rest, phone: null } : rest;
+}
 
 export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
   const r = rec(raw);
@@ -182,6 +209,8 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
   if (![1, 2, 3].includes(price)) return bad("가격대를 골라 주세요");
   const hours = parseHours(r.hours ?? {});
   if (!hours.ok) return hours;
+  const phone = parsePhone(r.phone);
+  if (!phone.ok) return phone;
   // 편의: 없으면 빈 배열. 모르는 값이 섞이면 거절. 순서는 AMENITIES 순서로 고정(중복 제거)
   let amenities: Amenity[] = [];
   if (r.amenities !== undefined && r.amenities !== null) {
@@ -210,6 +239,7 @@ export function parsePlaceInput(raw: unknown): Parsed<PlaceRow> {
     how_to_get_ko: text(r.how_to_get_ko, 1000),
     how_to_get_en: text(r.how_to_get_en, 1000),
     amenities,
+    ...(phone.value ? { phone: phone.value } : {}),
   });
 }
 

@@ -7,6 +7,7 @@ import {
   parseMenuInput,
   parsePlaceInput,
   parseStoryInput,
+  placeWriteRow,
   suggestSlug,
 } from "../src/lib/admin-input";
 
@@ -251,5 +252,43 @@ describe("parseStoryInput", () => {
     expect(parseStoryInput({ ...validStory, blocks: [{ t: "photo", url: "" }] }, SB).ok).toBe(false);
     expect(parseStoryInput({ ...validStory, blocks: "x" }, SB).ok).toBe(false);
     expect(parseStoryInput({ ...validStory, blocks: [] }, SB).ok).toBe(true);
+  });
+});
+
+describe("parsePlaceInput — 전화번호 (0004)", () => {
+  it("비어 있으면 phone 칸 자체가 없다 (0004 적용 전 DB 에서도 저장되게)", () => {
+    for (const phone of [undefined, "", "   "]) {
+      const r = parsePlaceInput({ ...basePlace, phone });
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.value).not.toHaveProperty("phone");
+    }
+  });
+  it("숫자·하이픈 8~20자만 받는다 (공백은 하이픈으로)", () => {
+    const a = parsePlaceInput({ ...basePlace, phone: " 033-671-1234 " });
+    expect(a.ok && a.value.phone).toBe("033-671-1234");
+    const b = parsePlaceInput({ ...basePlace, phone: "010 9542 3775" });
+    expect(b.ok && b.value.phone).toBe("010-9542-3775");
+    expect(parsePlaceInput({ ...basePlace, phone: "033-671" }).ok).toBe(false);
+    expect(parsePlaceInput({ ...basePlace, phone: "+82-33-671-1234" }).ok).toBe(false);
+    expect(parsePlaceInput({ ...basePlace, phone: "033.671.1234" }).ok).toBe(false);
+    expect(parsePlaceInput({ ...basePlace, phone: "1".repeat(21) }).ok).toBe(false);
+    expect(parsePlaceInput({ ...basePlace, phone: "--------" }).ok).toBe(false);
+  });
+});
+
+describe("placeWriteRow — 전화 칸 보내기", () => {
+  const row = (phone?: string) => {
+    const r = parsePlaceInput({ ...basePlace, phone });
+    if (!r.ok) throw new Error(r.error);
+    return r.value;
+  };
+  it("전화가 있으면 그대로 보낸다", () => {
+    expect(placeWriteRow(row("033-671-1234"), false)).toHaveProperty("phone", "033-671-1234");
+  });
+  it("전화가 비고 원래도 없었으면 phone 칸을 빼고 보낸다 (0004 전 DB 에서도 저장)", () => {
+    expect(placeWriteRow(row(""), false)).not.toHaveProperty("phone");
+  });
+  it("원래 있던 전화를 지우면 null 로 보낸다", () => {
+    expect(placeWriteRow(row(""), true)).toHaveProperty("phone", null);
   });
 });

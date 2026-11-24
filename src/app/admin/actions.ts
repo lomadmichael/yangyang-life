@@ -12,8 +12,10 @@ import {
   parseMenuInput,
   parsePlaceInput,
   parseStoryInput,
+  placeWriteRow,
 } from "@/lib/admin-input";
 import { photoUrl } from "@/lib/format";
+import { canShowPlacePhotos, placePhone } from "@/lib/place-photos";
 import { isRole } from "@/lib/permissions";
 import { canEditStory, nextStatusOnSave } from "@/lib/story-status";
 import {
@@ -30,6 +32,7 @@ import { ADMIN_COOKIE, ADMIN_COOKIE_PATH, SESSION_TTL_S, makeSession } from "@/l
 import { serviceClient } from "@/lib/supabase";
 import { draftEnglish, translationAvailable } from "@/lib/translate";
 import { authorize, type ActionResult } from "./auth";
+import type { AdminPlace } from "./data";
 
 // 관리 화면 서버 액션. 모든 액션이 레이아웃과 별개로 세션 + can() 을 직접 검사한다(R20).
 // 쓰기는 전부 service role. 코드·비밀키는 로그에 남기지 않는다.
@@ -109,7 +112,7 @@ export async function savePlace(id: string | null, input: unknown): Promise<Acti
     if (id === null) {
       const { data, error } = await db
         .from("places")
-        .insert({ ...parsed.value, created_by: admin.id, is_sample: false })
+        .insert({ ...placeWriteRow(parsed.value, false), created_by: admin.id, is_sample: false })
         .select("id")
         .single();
       if (error) {
@@ -119,7 +122,12 @@ export async function savePlace(id: string | null, input: unknown): Promise<Acti
       refreshAll();
       return { ok: true, message: "새 가게를 저장했어요.", data: { id: data.id as string } };
     }
-    const { data, error } = await db.from("places").update(parsed.value).eq("id", id).select("id");
+    // 원래 전화가 있었는지 — select("*") 라 0004 적용 전 DB(phone 칸 없음)에서도 깨지지 않는다(그때는 false)
+    const { data: before, error: getErr } = await db.from("places").select("*").eq("id", id).maybeSingle();
+    if (getErr) throw getErr;
+    if (!before) return fail("가게를 찾을 수 없어요.");
+    const hadPhone = placePhone(before as { phone?: string | null }) !== null;
+    const { data, error } = await db.from("places").update(placeWriteRow(parsed.value, hadPhone)).eq("id", id).select("id");
     if (error) {
       if (error.code === "23505") return fail("같은 주소 이름(slug)이 이미 있어요. 다른 이름으로 바꿔 주세요.");
       throw error;
@@ -195,11 +203,11 @@ const PHOTO_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "p
 async function loadPlaceForPhotos(id: string) {
   const { data, error } = await serviceClient()
     .from("places")
-    .select("id,code,status,photos")
+    .select("id,code,status,category,photos")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
-  return data as { id: string; code: string; status: string; photos: string[] } | null;
+  return data as Pick<AdminPlace, "id" | "code" | "status" | "category" | "photos"> | null;
 }
 
 export async function uploadPlacePhoto(formData: FormData): Promise<ActionResult> {
@@ -217,7 +225,7 @@ export async function uploadPlacePhoto(formData: FormData): Promise<ActionResult
   try {
     const place = await loadPlaceForPhotos(placeId);
     if (!place) return fail("가게를 찾을 수 없어요.");
-    if (place.status !== "participating") return fail("사진은 참여 가게(동의한 가게)만 올릴 수 있어요.");
+    if (!canShowPlacePhotos(place)) return fail("사진은 참여 가게(동의한 가게)와 해변·명소만 올릴 수 있어요.");
     if ((place.photos ?? []).length >= PHOTO_MAX_COUNT) return fail(`사진은 ${PHOTO_MAX_COUNT}장까지예요.`);
 
     const name = `${place.code}/${Date.now().toString(36)}-${randomBytes(4).toString("hex")}.${ext}`;

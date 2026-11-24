@@ -99,7 +99,7 @@ export function PlaceForm({
             </Field>
           )}
         </div>
-        <Field label="상태" hint="참여 가게 = 사장님이 동의한 곳. 사진·영어 메뉴판은 참여 가게만 공개돼요.">
+        <Field label="상태" hint="참여 가게 = 사장님이 동의한 곳. 영어 메뉴판은 참여 가게만, 사진은 참여 가게와 해변·명소만 공개돼요.">
           <select name="status" value={v.status} onChange={(e) => set("status", e.target.value)} className={inputCls}>
             {Object.entries(STATUS_KO).map(([k, label]) => (
               <option key={k} value={k}>
@@ -144,6 +144,18 @@ export function PlaceForm({
           koPlaceholder="남애항 버스 정류장에서 걸어서 5분"
           aiEnabled={aiEnabled}
         />
+        <Field label="전화번호 (선택)" hint="숫자와 하이픈만. 비워 두면 공개 화면에 전화 줄이 나오지 않아요.">
+          <input
+            name="phone"
+            type="tel"
+            value={v.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="033-671-1234"
+            className={inputCls}
+          />
+        </Field>
       </Card>
 
       <Card title="영업·편의">
