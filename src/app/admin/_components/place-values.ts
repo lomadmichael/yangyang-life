@@ -22,6 +22,8 @@ export interface PlaceFormValues {
   how_to_get_ko: string;
   how_to_get_en: string;
   amenities: Amenity[];
+  /** 0004 이후 칸. 비워 두면 저장 때 phone 칸 자체를 보내지 않는다(placeWriteRow) */
+  phone: string;
 }
 
 export const EMPTY_PLACE: PlaceFormValues = {
@@ -43,6 +45,7 @@ export const EMPTY_PLACE: PlaceFormValues = {
   how_to_get_ko: "",
   how_to_get_en: "",
   amenities: [],
+  phone: "",
 };
 
 function tri(v: boolean | null): string {
@@ -70,5 +73,6 @@ export function placeToValues(p: AdminPlace): PlaceFormValues {
     how_to_get_ko: p.how_to_get_ko ?? "",
     how_to_get_en: p.how_to_get_en ?? "",
     amenities: p.amenities ?? [],
+    phone: p.phone ?? "",
   };
 }

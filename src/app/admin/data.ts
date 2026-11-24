@@ -40,6 +40,8 @@ export interface AdminPlace {
   how_to_get_en: string | null;
   /** 0003 이후 칸. 적용 전 DB 에서는 없을 수 있다 */
   amenities?: Amenity[];
+  /** 0004 이후 칸. 적용 전 DB 에서는 없을 수 있다 */
+  phone?: string | null;
   photos: string[];
   verified_method: VerifiedMethod;
   verified_at: string | null;

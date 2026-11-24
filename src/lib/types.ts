@@ -42,6 +42,8 @@ export interface Place {
   has_english_menu: boolean;
   is_sample: boolean;
   amenities: Amenity[];
+  /** 0004 이후 칸. 적용 전 DB 에서는 없다(undefined) → 화면은 placePhone()으로 읽는다 */
+  phone?: string | null;
 }
 
 export interface MenuItem {
