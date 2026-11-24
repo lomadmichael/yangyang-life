@@ -18,17 +18,20 @@ export function VerifiedLine({
   at,
   by,
   lang,
+  className = "",
 }: {
   method: VerifiedMethod;
   at: string | null;
   by: string | null;
   lang: Lang;
+  /** 자리 조정용(예: 모바일은 본문, PC 는 오른쪽 정보 카드에 — lg:hidden / hidden lg:block) */
+  className?: string;
 }) {
   const date = formatVerifiedDate(at, lang);
   const name = by?.trim();
   if (!name || !date) return null;
   return (
-    <p className="text-sm text-muted">
+    <p className={`text-sm text-muted ${className}`}>
       <span>{tf(lang, "verifiedLine", { by: name, date })}</span>
       <span className="mt-0.5 block text-xs">{t(lang, METHOD_KEY[method] ?? "methodPublic")}</span>
     </p>

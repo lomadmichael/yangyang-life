@@ -165,6 +165,8 @@ export const en = {
 
   // Detail pages
   address: "Address",
+  phone: "Phone",
+  detailInfoTitle: "Visitor info",
   hours: "Opening hours",
   hoursUnknown: "Opening hours not confirmed yet",
   dayOff: "Closed",
@@ -236,6 +238,7 @@ export const en = {
   myJoinAction: "See who made this",
   myMakersLink: "Who made this",
   myMakersSub: "The people behind YANGYANG LIFE",
+  myContactLabel: "Questions about joining",
   myAdminLogin: "Admin login",
   emptyMakersTitle: "No one to introduce yet",
 

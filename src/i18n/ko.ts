@@ -164,6 +164,8 @@ export const ko = {
 
   // 상세 공통
   address: "주소",
+  phone: "전화",
+  detailInfoTitle: "이용 정보",
   hours: "영업시간",
   hoursUnknown: "영업시간 정보가 아직 없어요",
   dayOff: "쉬는 날",
@@ -235,6 +237,7 @@ export const ko = {
   myJoinAction: "만든 사람들 보기",
   myMakersLink: "만든 사람들",
   myMakersSub: "양양생활을 함께 만든 사람들",
+  myContactLabel: "참여 문의",
   myAdminLogin: "관리자 로그인",
   emptyMakersTitle: "아직 소개할 사람이 없어요",
 
