@@ -28,18 +28,18 @@ export async function TipList({
   const tips = await listTips(targetType, targetId);
 
   return (
-    <section id="tips" data-slot="tips" className="flex flex-col gap-4 border-t border-line pt-5">
-      <h2 className="font-bold">{t(lang, "tipsTitle")}</h2>
+    <section id="tips" data-slot="tips" className="flex flex-col gap-4 border-t-2 border-ink pt-5">
+      <h2 className="font-serif text-2xl font-semibold tracking-tight lg:text-3xl">{t(lang, "tipsTitle")}</h2>
       <TipForm lang={lang} targetType={targetType} targetId={targetId} />
 
       {tips.length === 0 ? (
-        <p className="text-sm text-muted">{t(lang, "tipsEmpty")}</p>
+        <p className="text-base text-ink-2">{t(lang, "tipsEmpty")}</p>
       ) : (
         <ul className="flex flex-col gap-3" data-testid="tip-list">
           {tips.map((tip) => {
             const kind = KIND[tip.kind];
             return (
-              <li key={tip.id} data-tip-id={tip.id} className="rounded-2xl border border-line bg-surface px-4 py-3">
+              <li key={tip.id} data-tip-id={tip.id} className="border-b border-rule px-1 py-4">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   <Badge tone={kind.tone}>{t(lang, kind.key)}</Badge>
                   {tip.handled && tip.kind === "changed" ? <Badge tone="muted">{t(lang, "tipHandled")}</Badge> : null}

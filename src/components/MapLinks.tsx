@@ -11,18 +11,49 @@ export function googleMapUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/search/?api=1&query=${lat}%2C${lng}`;
 }
 
-/** ko 는 네이버 지도가 위(주 버튼), en 은 구글 지도가 위 */
-export function MapLinks({ lat, lng, name, lang }: { lat: number; lng: number; name: string; lang: Lang }) {
+/**
+ * ko 는 네이버 지도가 위(주 버튼), en 은 구글 지도가 위.
+ * variant="pass" 는 장소 상세 입장권 안의 나란한 버튼(주 버튼 남색 + 선 버튼).
+ */
+export function MapLinks({
+  lat,
+  lng,
+  name,
+  lang,
+  variant = "stack",
+}: {
+  lat: number;
+  lng: number;
+  name: string;
+  lang: Lang;
+  variant?: "stack" | "pass";
+}) {
   const naver = { href: naverMapUrl(lat, lng, name), label: t(lang, "mapNaver") };
   const google = { href: googleMapUrl(lat, lng), label: t(lang, "mapGoogle") };
   const [primary, secondary] = lang === "ko" ? [naver, google] : [google, naver];
+  if (variant === "pass") {
+    return (
+      <div className="map-btns">
+        <a href={primary.href} target="_blank" rel="noopener noreferrer" className="btn-solid">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+            <circle cx="12" cy="9.5" r="2.5" />
+          </svg>
+          {primary.label}
+        </a>
+        <a href={secondary.href} target="_blank" rel="noopener noreferrer" className="btn-line">
+          {secondary.label}
+        </a>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-2">
       <a
         href={primary.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex min-h-12 items-center justify-center rounded-xl bg-sea px-4 font-medium text-on-sea"
+        className="flex min-h-12 items-center justify-center bg-deep px-4 font-semibold text-on-deep"
       >
         {primary.label}
       </a>
@@ -30,7 +61,7 @@ export function MapLinks({ lat, lng, name, lang }: { lat: number; lng: number; n
         href={secondary.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex min-h-11 items-center justify-center rounded-xl border border-line bg-surface px-4 text-sm text-sea"
+        className="flex min-h-11 items-center justify-center border border-ink bg-paper-card px-4 text-base font-medium text-ink"
       >
         {secondary.label}
       </a>

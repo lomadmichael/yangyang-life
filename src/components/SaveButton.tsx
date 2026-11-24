@@ -112,11 +112,16 @@ export function SaveButton({
   id,
   lang,
   size = "sm",
+  variant = "icon",
+  className = "",
 }: {
   kind: SavedKind;
   id: string;
   lang: Lang;
   size?: "sm" | "md";
+  /** icon = 별 하나(목록·카드), text = 별 + 「저장/저장됨」 글자 단추(상세 표지) — 모양은 className */
+  variant?: "icon" | "text";
+  className?: string;
 }) {
   const saved = isSaved(useSavedState(), kind, id);
   const { toast, show } = useToast();
@@ -136,6 +141,18 @@ export function SaveButton({
   const Icon = saved ? IconStarFilled : IconStar;
   const sz = SIZES[size];
 
+  if (variant === "text") {
+    return (
+      <>
+        <button type="button" onClick={onClick} aria-pressed={saved} className={className}>
+          <Icon className="h-5 w-5" />
+          {t(lang, saved ? "savedText" : "saveText")}
+        </button>
+        <SaveToast toast={toast} lang={lang} />
+      </>
+    );
+  }
+
   return (
     <>
       <button
@@ -143,7 +160,7 @@ export function SaveButton({
         onClick={onClick}
         aria-pressed={saved}
         aria-label={t(lang, "saveLabel")}
-        className={`inline-flex shrink-0 items-center justify-center rounded-full ${sz.button} ${saved ? "text-sea" : "text-muted hover:text-ink"}`}
+        className={`inline-flex shrink-0 items-center justify-center ${sz.button} ${saved ? "text-sunrise-ink" : "text-ink-2 hover:text-ink"} ${className}`}
       >
         <Icon className={sz.icon} />
       </button>
