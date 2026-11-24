@@ -52,3 +52,23 @@ export function featureCount(n: number): number {
   if (n >= 2) return 2;
   return n;
 }
+
+/** 가격·영어 메뉴 대신 편의(주차·화장실·샤워장)를 보여 주는 분류 — 해변·명소, 생활 편의 */
+export function isAmenityCategory(category: Place["category"]): boolean {
+  return category === "spot" || category === "life";
+}
+
+/**
+ * 화면 가득 표지의 큰 제목 크기 단계 — 장소·놀거리·이야기 상세가 같이 쓴다(magazine CSS 의 .sz-xl … .sz-xs).
+ * 한글 한 글자 = 1, 그 밖(영문·숫자·공백)은 0.55 로 센 글자 폭 기준.
+ */
+export function coverTitleSize(title: string): "sz-xl" | "sz-l" | "sz-m" | "sz-s" | "sz-xs" {
+  const chars = [...title];
+  const hangul = chars.filter((c) => /[ㄱ-힣]/.test(c)).length;
+  const w = hangul + (chars.length - hangul) * 0.55;
+  if (w <= 3.6) return "sz-xl";
+  if (w <= 5.8) return "sz-l";
+  if (w <= 10) return "sz-m";
+  if (w <= 18) return "sz-s";
+  return "sz-xs";
+}

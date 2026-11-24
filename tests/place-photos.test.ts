@@ -1,5 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { canShowPlacePhotos, placePhone, telHref } from "../src/lib/place-photos";
+import { canShowPlacePhotos, placeFallbackPhoto, placeOwnPhoto, placePhone, placeUsesCategoryPhoto, telHref } from "../src/lib/place-photos";
+
+describe("placeUsesCategoryPhoto (가게는 분류 대표 사진 대신 색면)", () => {
+  it("해변·명소만 분류 대표 사진을 쓴다", () => {
+    expect(placeUsesCategoryPhoto({ category: "spot" })).toBe(true);
+  });
+  it("가게 분류는 쓰지 않는다", () => {
+    for (const category of ["food", "cafe", "stay", "surf", "bar", "life"] as const) {
+      expect(placeUsesCategoryPhoto({ category })).toBe(false);
+    }
+  });
+  it("placeFallbackPhoto 도 같은 규칙 — 가게는 null, 해변·명소는 사진 경로", () => {
+    expect(placeFallbackPhoto("food")).toBeNull();
+    expect(placeFallbackPhoto("cafe")).toBeNull();
+    expect(placeFallbackPhoto("spot")).toMatch(/^\/images\//);
+  });
+});
+
+describe("placeOwnPhoto", () => {
+  it("보여 줄 수 있는 곳의 첫 사진", () => {
+    expect(placeOwnPhoto({ status: "participating", category: "food", photos: ["a.jpg", "b.jpg"] })).toBe("a.jpg");
+    expect(placeOwnPhoto({ status: "listed", category: "spot", photos: ["s.jpg"] })).toBe("s.jpg");
+  });
+  it("비공개 장소·빈 목록은 null", () => {
+    expect(placeOwnPhoto({ status: "listed", category: "food", photos: ["a.jpg"] })).toBeNull();
+    expect(placeOwnPhoto({ status: "participating", category: "food", photos: [] })).toBeNull();
+    expect(placeOwnPhoto({ status: "participating", category: "food", photos: null })).toBeNull();
+    expect(placeOwnPhoto({ status: "participating", category: "food", photos: [" "] })).toBeNull();
+  });
+});
 
 describe("canShowPlacePhotos (0004 places_public.photos 규칙과 같게)", () => {
   it("참여 가게는 분류와 무관하게 사진 공개", () => {

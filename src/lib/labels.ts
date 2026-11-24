@@ -1,5 +1,5 @@
 import type { DictKey } from "../i18n";
-import type { Amenity, Place, PlaceCategory, PlayCategory, StoryTag, StoryType } from "./types";
+import type { Amenity, Place, PlaceCategory, PlayCategory, StoryTag, StoryType, VerifiedMethod } from "./types";
 
 // 데이터 값 → 사전 키. 화면 여러 곳에서 같은 이름을 쓰도록 한곳에 모은다.
 // 순서는 화면 탭·칩 순서 그대로(고정).
@@ -60,3 +60,11 @@ export const PRICE_KEY: Record<Place["price_level"], DictKey> = { 1: "price1", 2
 export function priceSymbol(level: Place["price_level"]): string {
   return "₩".repeat(level);
 }
+
+/** 확인 방법 → 사전 키 (「직접 방문해 확인」 등) */
+export const METHOD_KEY: Record<VerifiedMethod, DictKey> = {
+  visit: "methodVisit",
+  phone: "methodPhone",
+  interview: "methodInterview",
+  public: "methodPublic",
+};

@@ -6,7 +6,6 @@ import { FallbackNote } from "@/components/FallbackNote";
 import { FilterChips, type Chip } from "@/components/FilterChips";
 import { MapCard } from "@/components/map/MapCard";
 import { hoodText, toMapPlaces } from "@/components/map/map-places";
-import { isAmenityCategory } from "@/components/PlaceCard";
 import { SafeImage } from "@/components/SafeImage";
 import { SaveButton } from "@/components/SaveButton";
 import { isLang, pickText, t, tf, type Lang } from "@/i18n";
@@ -14,8 +13,8 @@ import { photoUrl } from "@/lib/format";
 import { parsePlacesQuery, placesQueryString } from "@/lib/list-query";
 import { CATEGORIES, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
 import { groupByNeighborhood, numberPlaces } from "@/lib/neighborhood";
-import { canShowPlacePhotos } from "@/lib/place-photos";
-import { featureCount, featureScore, placeName, placeState, type PlaceState } from "@/lib/place-view";
+import { placeOwnPhoto } from "@/lib/place-photos";
+import { featureCount, featureScore, isAmenityCategory, placeName, placeState, type PlaceState } from "@/lib/place-view";
 import { filterPlaces, visibleCategories, type PlaceFilter } from "@/lib/places-filter";
 import { seoulParts } from "@/lib/hours";
 import { formatToday } from "@/lib/format";
@@ -205,14 +204,13 @@ export default async function PlacesPage({ params, searchParams }: PageProps<"/[
   const items: Item[] = places
     .map((p) => {
       const row = p as unknown as Record<string, unknown>;
-      const own = canShowPlacePhotos(p) ? (p.photos ?? [])[0] : undefined;
       return {
         p,
         no: numbers.get(p.id) ?? "",
         name: placeName(p, lang),
         summary: pickText(row, "summary", lang),
         state: placeState(p, now),
-        photo: own ?? null,
+        photo: placeOwnPhoto(p),
       };
     })
     .sort((a, b) => a.no.localeCompare(b.no));

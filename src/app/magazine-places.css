@@ -1802,3 +1802,74 @@
     }
   }
 }
+
+@layer components {
+  /* ───────── 장소·놀거리 상세 본문의 작은 정보 줄 (DB 값만 — 짧은 소개만 있는 곳도 본문 단이 비지 않게) ───────── */
+  .art-facts {
+    margin: 48px 0 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+    border-top: 1px solid var(--ink);
+  }
+  .art-facts > div {
+    padding: 16px 0 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .art-facts dt {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--deep-2);
+  }
+  .art-facts dd {
+    margin: 6px 0 0;
+    font-family: var(--serif);
+    font-size: 20px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .art-facts dd.num {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 22px;
+  }
+  .art-facts dd small {
+    display: block;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--ink-2);
+  }
+  .art-facts .cat-dot {
+    margin-right: 10px;
+  }
+  .ph-hero h1.sz-xs {
+    font-size: clamp(36px, 3.8vw, 60px);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  /* 자체 사진이 없는 가게의 색면 표지 — 사진용 짙은 덮개를 걷어 분류색이 보이게(글자 대비는 아래쪽 그늘로) */
+  .ph-hero.no-photo::after {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--shade) 22%, transparent) 0%, transparent 24%, transparent 55%, color-mix(in srgb, var(--shade) 38%, transparent) 100%);
+  }
+  .ph-hero.no-photo .cover-media .noimg .glyph {
+    opacity: 0.4;
+  }
+  @media (max-width: 860px) {
+    .art-facts {
+      margin-top: 36px;
+      column-gap: 16px;
+    }
+    .art-facts dd {
+      font-size: 18px;
+    }
+    .art-facts dd.num {
+      font-size: 18px;
+    }
+    .ph-hero h1.sz-xs {
+      font-size: clamp(28px, 7.6vw, 34px);
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { placeFallbackPhoto } from "@/lib/place-photos";
 import type { PlaceCategory, PlayCategory, StoryType } from "@/lib/types";
 import {
   IconBed,
@@ -18,22 +19,24 @@ import {
 } from "./icons";
 
 // 사진이 없는 카드에 까는 분류별 그림·바탕색·대표 사진. 색은 토큰 옅은 바탕만 쓴다.
-// photo = public/images 의 분류 대표 사진(출처 public/images/CREDITS.md). 그 가게·행사의 실제 사진이 아니다 —
-// 카드에는 그대로 쓰고, 상세의 큰 사진 자리에 쓸 때는 「분류 대표 사진」 표시를 붙인다(PhotoFrame fallbackLabel).
-// 맞는 사진이 없는 분류(펍·바, 생활 편의)는 photo 없이 아이콘 바탕만.
+// photo = public/images 의 분류 대표 사진(출처 public/images/CREDITS.md). 그 장소·행사의 실제 사진이 아니다 —
+// 큰 사진 자리에 쓸 때는 「분류 대표 사진」 표시를 붙인다.
+// 장소는 해변·명소만 대표 사진이 있다 — 가게에 대표 사진을 깔면 그 가게 음식·시설로 오해된다(규칙: lib/place-photos.ts
+// placeUsesCategoryPhoto·placeFallbackPhoto). 가게는 자체 사진이 없으면 색면 표지(magazine.css .noimg).
 
 export type VisualTone = "sea" | "pine" | "salmon" | "sand";
 export type Visual = { Icon: ComponentType<{ className?: string }>; tone: VisualTone; photo?: string };
 
 export const PLACE_VISUAL: Record<PlaceCategory, Visual> = {
-  food: { photo: "/images/cat-food.jpg", Icon: IconUtensils, tone: "salmon" },
-  cafe: { photo: "/images/cat-cafe.jpg", Icon: IconCup, tone: "sand" },
-  stay: { photo: "/images/cat-stay.jpg", Icon: IconBed, tone: "sea" },
-  surf: { photo: "/images/cat-surf.jpg", Icon: IconWave, tone: "sea" },
+  food: { Icon: IconUtensils, tone: "salmon" },
+  cafe: { Icon: IconCup, tone: "sand" },
+  stay: { Icon: IconBed, tone: "sea" },
+  surf: { Icon: IconWave, tone: "sea" },
   bar: { Icon: IconGlass, tone: "salmon" },
-  spot: { photo: "/images/cat-spot.jpg", Icon: IconMountain, tone: "pine" },
+  spot: { photo: placeFallbackPhoto("spot") ?? undefined, Icon: IconMountain, tone: "pine" },
   life: { Icon: IconPin, tone: "sand" },
 };
+
 
 export const PLAY_VISUAL: Record<PlayCategory, Visual> = {
   surf: { photo: "/images/play-surf.jpg", Icon: IconWave, tone: "sea" },

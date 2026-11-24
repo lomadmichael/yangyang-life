@@ -5,10 +5,9 @@ import { notFound } from "next/navigation";
 import { FallbackNote } from "@/components/FallbackNote";
 import { HoursTable } from "@/components/HoursTable";
 import { MapLinks } from "@/components/MapLinks";
-import { FALLBACK_VISUAL, PLACE_VISUAL, PLAY_VISUAL } from "@/components/category-visual";
+import { PLAY_VISUAL } from "@/components/category-visual";
 import { hoodText, toMapPlaces } from "@/components/map/map-places";
 import { SketchMap } from "@/components/map/SketchMap";
-import { isAmenityCategory } from "@/components/PlaceCard";
 import { SaveButton } from "@/components/SaveButton";
 import { SafeImage } from "@/components/SafeImage";
 import { StoryPhoto } from "@/components/StoryPhoto";
@@ -18,10 +17,10 @@ import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
 import { activityWhen, formatVerifiedDate, photoUrl, WEEKDAY_KEYS } from "@/lib/format";
 import { seoulParts } from "@/lib/hours";
 import { placesQueryString } from "@/lib/list-query";
-import { AMENITY_KEY, CATEGORY_KEY, PLAY_CATEGORY_KEY, PRICE_KEY, STORY_TYPE_KEY, priceSymbol } from "@/lib/labels";
+import { AMENITY_KEY, CATEGORY_KEY, METHOD_KEY, PLAY_CATEGORY_KEY, PRICE_KEY, STORY_TYPE_KEY, priceSymbol } from "@/lib/labels";
 import { neighborhoodOf, numberPlaces } from "@/lib/neighborhood";
-import { canShowPlacePhotos, placePhone, telHref } from "@/lib/place-photos";
-import { hasHours, placeName, placeState, todayHoursText, WEEK_MON_FIRST, type PlaceState } from "@/lib/place-view";
+import { canShowPlacePhotos, placeFallbackPhoto, placePhone, telHref } from "@/lib/place-photos";
+import { coverTitleSize, hasHours, isAmenityCategory, placeName, placeState, todayHoursText, WEEK_MON_FIRST, type PlaceState } from "@/lib/place-view";
 import { placeActivities } from "@/lib/play";
 import { getPlaceBySlug, listActivities, listPlaces, listStoriesMentioning } from "@/lib/queries";
 import { formatDistance, inMap, nearest } from "@/lib/sketch-map";
@@ -67,17 +66,6 @@ function stateText(lang: Lang, s: PlaceState): string {
         : t(lang, "hoursUnknown");
 }
 
-/** 표지 제목 크기 — 글자 수에 맞춰 네 단계(영문은 한 글자가 좁아 절반 남짓으로 센다) */
-function titleSize(name: string): string {
-  const chars = [...name];
-  const hangul = chars.filter((c) => /[ㄱ-힣]/.test(c)).length;
-  const w = hangul + (chars.length - hangul) * 0.55;
-  if (w <= 3.6) return "sz-xl";
-  if (w <= 5.8) return "sz-l";
-  if (w <= 10) return "sz-m";
-  return "sz-s";
-}
-
 const Arrow = () => (
   <svg viewBox="0 0 20 12" aria-hidden="true">
     <path d="M0 6h18M13 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
@@ -121,8 +109,8 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   const [heroPhoto, ...morePhotos] = photos;
   // 0004 적용 전 뷰에는 phone 칸이 없다 → null 이면 전화 줄을 그리지 않는다
   const phone = placePhone(place);
-  // 자체 사진이 없으면 분류 대표 사진 한 장 — 이 가게 사진이 아니므로 「분류 대표 사진」 표시. 그것도 없으면 색면
-  const visual = PLACE_VISUAL[place.category] ?? FALLBACK_VISUAL;
+  // 자체 사진이 없으면: 해변·명소는 분류 대표 사진(「분류 대표 사진」 표시), 가게는 색면 표지(대표 사진은 그 가게 음식·시설로 오해된다)
+  const fallbackPhoto = placeFallbackPhoto(place.category);
   const hood = neighborhoodOf(place);
   const placesHref = `/${lang}/places`;
 
@@ -134,24 +122,24 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   return (
     <div className="mz-place">
       {/* ① 표지 */}
-      <section className="cover ph-hero" aria-label={name.text}>
+      <section className={`cover ph-hero ${heroPhoto || fallbackPhoto ? "" : "no-photo"}`} aria-label={name.text}>
         <div className="cover-media">
+          {/* 바탕은 늘 분류색 색면 — 자체 사진을 못 불러와 SafeImage 가 사라져도 표지가 비지 않는다 */}
+          <span className={`noimg cat-${place.category}`} aria-hidden="true">
+            <span className="glyph">{name.text.replace(/^양양\s*/, "").charAt(0)}</span>
+          </span>
           {heroPhoto ? (
             <SafeImage
               src={photoUrl(heroPhoto)}
               alt={tf(lang, "photoAlt", { name: name.text })}
-              fallbackSrc={visual.photo}
+              fallbackSrc={fallbackPhoto}
               fallbackLabel={t(lang, "categoryPhotoLabel")}
             />
-          ) : visual.photo ? (
+          ) : fallbackPhoto ? (
             <div className="ph-img">
-              <Image src={visual.photo} alt="" fill priority sizes="100vw" />
+              <Image src={fallbackPhoto} alt="" fill priority sizes="100vw" />
             </div>
-          ) : (
-            <span className={`noimg cat-${place.category}`} aria-hidden="true">
-              <span className="glyph">{name.text.replace(/^양양\s*/, "").charAt(0)}</span>
-            </span>
-          )}
+          ) : null}
         </div>
         <div className="cover-in">
           <div className="cover-meta rise">
@@ -166,7 +154,7 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
           <div className="ph-title">
             <div>
               <span className="p-no rise">{tf(lang, "placeNoCat", { no, cat: catLabel })}</span>
-              <h1 className={`rise d1 ${titleSize(name.text)}`}>{name.text}</h1>
+              <h1 className={`rise d1 ${coverTitleSize(name.text)}`}>{name.text}</h1>
               {name.sub ? <div className="roman rise d1">{name.sub}</div> : null}
             </div>
             <div className="ph-side rise d2">
@@ -179,7 +167,7 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
             </div>
           </div>
           <div className="cover-foot">
-            {!heroPhoto && visual.photo ? <span className="rep">{t(lang, "categoryPhotoLabel")}</span> : <span />}
+            {!heroPhoto && fallbackPhoto ? <span className="rep">{t(lang, "categoryPhotoLabel")}</span> : <span />}
             <div className="p-acts rise d3">
               <a className="btn-solid light" href="#info">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -218,6 +206,38 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
                 </p>
               </section>
             ) : null}
+
+            {/* 짧은 소개만 있는 곳도 본문 단이 비어 보이지 않게 — 지어낸 문장 없이 DB 값으로 된 작은 정보 줄 */}
+            <dl className="art-facts">
+              <div>
+                <dt>{t(lang, "factCategory")}</dt>
+                <dd>
+                  <span className={`cat-dot cat-${place.category}`} aria-hidden="true" />
+                  {catLabel}
+                </dd>
+              </div>
+              <div>
+                <dt>{t(lang, "factHood")}</dt>
+                <dd>{hoodText(hood, lang).name}</dd>
+              </div>
+              {drawable ? (
+                <div>
+                  <dt>{t(lang, "factCoords")}</dt>
+                  <dd className="num">
+                    {place.lat.toFixed(4)} N · {place.lng.toFixed(4)} E
+                  </dd>
+                </div>
+              ) : null}
+              {place.verified_at ? (
+                <div>
+                  <dt>{t(lang, "factChecked")}</dt>
+                  <dd>
+                    {t(lang, METHOD_KEY[place.verified_method] ?? "methodPublic")}
+                    <small>{formatVerifiedDate(place.verified_at, lang)}</small>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
             {morePhotos.length ? (
               <figure className={`art-fig ${morePhotos.length === 1 ? "one" : ""}`}>
