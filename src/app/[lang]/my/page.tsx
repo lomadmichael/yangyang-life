@@ -16,5 +16,8 @@ export default async function MyPage({ params }: PageProps<"/[lang]/my">) {
     tips = null; // 화면은 그대로, 팁 칸에만 「불러오지 못했어요」
   }
 
-  return <MyClient lang={lang} tips={tips} />;
+  // 참여 문의 번호 — 환경변수에서만 읽는다(코드에 번호를 쓰지 않는다). 비면 줄을 숨긴다
+  const contactPhone = (process.env.NEXT_PUBLIC_YL_CONTACT_PHONE ?? "").trim() || null;
+
+  return <MyClient lang={lang} tips={tips} contactPhone={contactPhone} />;
 }

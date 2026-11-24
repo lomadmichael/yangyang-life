@@ -11,6 +11,7 @@ import { useSavedSnapshot } from "@/components/SaveButton";
 import { StoryCard } from "@/components/StoryCard";
 import { t, type DictKey, type Lang } from "@/i18n";
 import { formatVerifiedDate } from "@/lib/format";
+import { telHref } from "@/lib/place-photos";
 import { parseSaved, type SavedKind, type SavedState } from "@/lib/saved";
 import type { TipKind } from "@/lib/tips";
 import type { Activity, Place, Story } from "@/lib/types";
@@ -55,7 +56,16 @@ function useHydrated(): boolean {
   );
 }
 
-export function MyClient({ lang, tips }: { lang: Lang; tips: MyTip[] | null }) {
+export function MyClient({
+  lang,
+  tips,
+  contactPhone,
+}: {
+  lang: Lang;
+  tips: MyTip[] | null;
+  /** 참여 문의 번호(NEXT_PUBLIC_YL_CONTACT_PHONE). null 이면 줄을 숨긴다 */
+  contactPhone: string | null;
+}) {
   const hydrated = useHydrated();
   const raw = useSavedSnapshot();
   const saved = useMemo(() => parseSaved(raw), [raw]);
@@ -216,6 +226,14 @@ export function MyClient({ lang, tips }: { lang: Lang; tips: MyTip[] | null }) {
         >
           {t(lang, "myJoinAction")}
         </Link>
+        {contactPhone ? (
+          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-sm">
+            <span>{t(lang, "myContactLabel")}</span>
+            <a href={telHref(contactPhone)} className="inline-flex min-h-11 items-center font-bold text-sea underline underline-offset-4">
+              {contactPhone}
+            </a>
+          </p>
+        ) : null}
       </section>
 
       <Link
