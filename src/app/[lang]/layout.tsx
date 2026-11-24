@@ -1,21 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR } from "next/font/google";
-import Link from "next/link";
+import { Cormorant_Garamond, IBM_Plex_Sans_KR, Nanum_Pen_Script, Noto_Serif_KR } from "next/font/google";
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
-import { LangSwitch } from "@/components/LangSwitch";
 import { PwaSetup } from "@/components/PwaSetup";
+import { Reveal } from "@/components/Reveal";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TopNav } from "@/components/TopNav";
 import { LANGS, isLang, t } from "@/i18n";
 import { THEME_COLOR } from "@/lib/pwa";
 import "../globals.css";
+import "../magazine.css";
+import "../magazine-places.css";
+import "../magazine-pages.css";
 
-const notoSansKr = Noto_Sans_KR({
-  variable: "--font-noto-sans-kr",
+// v4 글꼴 — 제목 명조(Noto Serif KR) · 영문 장식 이탤릭(Cormorant Garamond) · 본문(IBM Plex Sans KR) · 손글씨(Nanum Pen Script, 약도 지명·짧은 주석만).
+// 한글 글꼴은 라틴 부분만 미리 받고(preload) 한글 글자는 쓰일 때 unicode-range 조각으로 받는다. 손글씨는 미리 받지 않는다.
+const serifKr = Noto_Serif_KR({ variable: "--font-noto-serif-kr", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
+const plexKr = IBM_Plex_Sans_KR({ variable: "--font-plex-kr", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const nanumPen = Nanum_Pen_Script({ variable: "--font-nanum-pen", subsets: ["latin"], weight: "400", preload: false });
 
 // /ko, /en 만 존재한다. 그 밖의 값(/fr 등)은 404.
 export const dynamicParams = false;
@@ -45,7 +53,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   };
 }
 
-// 주소창·상태 표시줄 색 = sea 토큰 (Next 16: themeColor 는 metadata 가 아니라 viewport 로)
+// 주소창·상태 표시줄 색 = sea(= deep 쪽빛 남색) 토큰 (Next 16: themeColor 는 metadata 가 아니라 viewport 로)
 export const viewport: Viewport = {
   themeColor: THEME_COLOR,
 };
@@ -55,20 +63,18 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   if (!isLang(lang)) notFound();
 
   return (
-    <html lang={lang} className={`${notoSansKr.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col overflow-x-clip">
+    <html
+      lang={lang}
+      className={`${serifKr.variable} ${cormorant.variable} ${plexKr.variable} ${nanumPen.variable} h-full antialiased`}
+    >
+      <body className="mz-body flex min-h-full flex-col overflow-x-clip bg-paper">
+        {/* 머리 메뉴 — 모든 폭. 홈 표지 위에서는 투명, 그 밖에서는 종이 바탕 + 아래 빈칸 */}
         <TopNav lang={lang} />
-        {/* 모바일 머리말 — PC(lg 이상)는 TopNav */}
-        <header className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2 lg:hidden">
-          <Link href={`/${lang}`} className="inline-flex min-h-11 items-center font-bold text-sea">
-            {t(lang, "siteName")}
-          </Link>
-          <LangSwitch lang={lang} />
-        </header>
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col lg:max-w-6xl">{children}</main>
+        <main className="site-main mx-auto flex w-full max-w-md flex-1 flex-col lg:max-w-6xl">{children}</main>
         <SiteFooter lang={lang} />
         <BottomNav lang={lang} />
         <PwaSetup />
+        <Reveal />
       </body>
     </html>
   );

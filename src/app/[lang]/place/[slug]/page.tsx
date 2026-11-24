@@ -1,31 +1,32 @@
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { ActivityCard } from "@/components/ActivityCard";
-import { BackLink } from "@/components/BackLink";
-import { Badge } from "@/components/Badge";
 import { FallbackNote } from "@/components/FallbackNote";
 import { HoursTable } from "@/components/HoursTable";
-import { InfoRow } from "@/components/InfoRow";
 import { MapLinks } from "@/components/MapLinks";
-import { FALLBACK_VISUAL, PLACE_VISUAL } from "@/components/category-visual";
-import { PhotoFrame } from "@/components/PhotoCard";
-import { isAmenityCategory } from "@/components/PlaceCard";
+import { PLAY_VISUAL } from "@/components/category-visual";
+import { hoodText, toMapPlaces } from "@/components/map/map-places";
+import { SketchMap } from "@/components/map/SketchMap";
 import { SaveButton } from "@/components/SaveButton";
 import { SafeImage } from "@/components/SafeImage";
-import { StoryCard } from "@/components/StoryCard";
+import { StoryPhoto } from "@/components/StoryPhoto";
 import { TipList } from "@/components/TipList";
 import { VerifiedLine } from "@/components/VerifiedLine";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
-import { photoUrl } from "@/lib/format";
-import { isOpenNow } from "@/lib/hours";
-import { canShowPlacePhotos, placePhone, telHref } from "@/lib/place-photos";
+import { activityWhen, formatVerifiedDate, photoUrl, WEEKDAY_KEYS } from "@/lib/format";
+import { seoulParts } from "@/lib/hours";
+import { placesQueryString } from "@/lib/list-query";
+import { AMENITY_KEY, CATEGORY_KEY, METHOD_KEY, PLAY_CATEGORY_KEY, PRICE_KEY, STORY_TYPE_KEY, priceSymbol } from "@/lib/labels";
+import { neighborhoodOf, numberPlaces } from "@/lib/neighborhood";
+import { canShowPlacePhotos, placeFallbackPhoto, placePhone, telHref } from "@/lib/place-photos";
+import { coverTitleSize, hasHours, isAmenityCategory, placeName, placeState, todayHoursText, WEEK_MON_FIRST, type PlaceState } from "@/lib/place-view";
 import { placeActivities } from "@/lib/play";
-import { AMENITY_KEY, CATEGORY_KEY, PRICE_KEY, priceSymbol } from "@/lib/labels";
-import { getPlaceBySlug, listActivities, listStoriesMentioning } from "@/lib/queries";
-import type { Activity, Story } from "@/lib/types";
+import { getPlaceBySlug, listActivities, listPlaces, listStoriesMentioning } from "@/lib/queries";
+import { formatDistance, inMap, nearest } from "@/lib/sketch-map";
+import type { Activity, Place, Story } from "@/lib/types";
 
-// 아래 두 묶음은 곁가지 — 조회가 실패해도(예: 0003 적용 전 stories_public 없음) 상세 화면은 그대로 보여 준다
+// 아래 묶음은 곁가지 — 조회가 실패해도(예: 0003 적용 전 stories_public 없음) 상세 화면은 그대로 보여 준다
 async function storiesFor(placeId: string): Promise<Story[]> {
   try {
     return await listStoriesMentioning("place", placeId);
@@ -42,24 +43,39 @@ async function activitiesAt(placeId: string): Promise<Activity[]> {
   }
 }
 
+async function allPlaces(): Promise<Place[]> {
+  try {
+    return await listPlaces();
+  } catch {
+    return [];
+  }
+}
+
 function yesNo(lang: Lang, v: boolean | null): string {
   const key: DictKey = v === null ? "unknown" : v ? "yes" : "no";
   return t(lang, key);
 }
 
-/**
- * PC(lg) 사진 모자이크 칸 — 첫 장은 왼쪽 2칸×2줄, 둘째·셋째는 오른쪽 위·아래(둘뿐이면 둘째가 오른쪽 통째).
- * 넷째부터는 PC 에서 숨긴다(모바일 가로 넘김에는 전부 나온다).
- * 한 장뿐이면 사진 자체를 5:2 로, 여러 장이면 틀(5:2)을 칸이 꽉 채운다.
- */
-function galleryCell(i: number, n: number): string {
-  if (n === 1) return "lg:aspect-[5/2]";
-  const fill = "lg:aspect-auto lg:h-full";
-  if (i === 0) return `${fill} lg:col-span-2 lg:row-span-2`;
-  if (i === 1 && n === 2) return `${fill} lg:row-span-2`;
-  return i >= 3 ? "lg:hidden" : fill;
+function stateText(lang: Lang, s: PlaceState): string {
+  return s === "shut"
+    ? t(lang, "statusClosed")
+    : s === "open"
+      ? t(lang, "openNow")
+      : s === "later"
+        ? t(lang, "closedNow")
+        : t(lang, "hoursUnknown");
 }
 
+const Arrow = () => (
+  <svg viewBox="0 0 20 12" aria-hidden="true">
+    <path d="M0 6h18M13 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+
+// 장소 상세 (v4, 디자인 명세 yangyang-design/out/v3/d/place.html) —
+// ① 화면 가득 사진 위 큰 제목 ② 잡지 기사형 본문(소개·가는 법 — DB 값만) + 입장권 모양 이용 정보
+// ③ 확대 약도 + 근처 세 곳(직선거리) ④ 이 장소가 나오는 이야기 ⑤ 이 장소의 놀거리 ⑥ 팁·정보 수정 제보.
+// 연결된 것이 없는 단락은 그리지 않는다. 모바일은 이용 정보가 본문 앞.
 export default async function PlacePage({ params }: PageProps<"/[lang]/place/[slug]">) {
   const { lang, slug } = await params;
   if (!isLang(lang)) notFound();
@@ -68,199 +84,452 @@ export default async function PlacePage({ params }: PageProps<"/[lang]/place/[sl
   const place = await getPlaceBySlug(slug);
   if (!place) notFound();
 
-  const [stories, activitiesHere] = await Promise.all([storiesFor(place.id), activitiesAt(place.id)]);
+  const [stories, activitiesHere, everyone] = await Promise.all([storiesFor(place.id), activitiesAt(place.id), allPlaces()]);
   const now = new Date();
   // 끝난 기간 행사는 빼고, 비시즌(서울 이번 달 기준)은 뒤로 보내 흐리게
   const activities = placeActivities(activitiesHere, now);
-  const categoryKey = CATEGORY_KEY[place.category];
-  const amenities = place.amenities ?? [];
+  const all = everyone.some((p) => p.id === place.id) ? everyone : [...everyone, place];
+  const numbers = numberPlaces(all);
+  const no = numbers.get(place.id) ?? "";
+
   const row = place as unknown as Record<string, unknown>;
-  const name = pickText(row, "name", lang);
+  const name = placeName(place, lang);
   const summary = pickText(row, "summary", lang);
   const howTo = pickText(row, "how_to_get", lang);
+  const catLabel = CATEGORY_KEY[place.category] ? t(lang, CATEGORY_KEY[place.category]) : place.category;
+  const amenities = place.amenities ?? [];
+  const amenityMode = isAmenityCategory(place.category);
   const closed = place.status === "closed";
-  const open = isOpenNow(place.hours, place.status, now);
+  const state = placeState(place, now);
+  const todayText = todayHoursText(place.hours, now);
+  const known = hasHours(place.hours);
+  const todayIdx = seoulParts(now).weekday;
   // 사진은 참여 가게·해변·명소만 (공개 뷰도 비워 주지만 화면에서 한 번 더 막는다 — 규칙은 place-photos.ts)
   const photos = canShowPlacePhotos(place) ? (place.photos ?? []) : [];
+  const [heroPhoto, ...morePhotos] = photos;
   // 0004 적용 전 뷰에는 phone 칸이 없다 → null 이면 전화 줄을 그리지 않는다
   const phone = placePhone(place);
-  // 자체 사진이 없으면 분류 대표 사진 한 장 — 이 가게 사진이 아니므로 구석에 「분류 대표 사진」 표시
-  const visual = PLACE_VISUAL[place.category] ?? FALLBACK_VISUAL;
+  // 자체 사진이 없으면: 해변·명소는 분류 대표 사진(「분류 대표 사진」 표시), 가게는 색면 표지(대표 사진은 그 가게 음식·시설로 오해된다)
+  const fallbackPhoto = placeFallbackPhoto(place.category);
+  const hood = neighborhoodOf(place);
+  const placesHref = `/${lang}/places`;
+
+  const near = nearest(place, all, 3);
+  const mapPlaces = toMapPlaces(all, numbers, lang);
+  const drawable = inMap(place.lat, place.lng);
+  const stamp = place.verified_at ? place.verified_at.slice(0, 10).replace(/-/g, ".") : null;
 
   return (
-    <article className="flex flex-col gap-5 px-4 pb-10 lg:gap-8 lg:px-8 lg:pb-16 lg:pt-6">
-      <div className="flex items-center justify-between gap-3">
-        <BackLink href={`/${lang}/places`} label={t(lang, "placesTitle")} />
-        <SaveButton kind="place" id={place.id} lang={lang} size="md" />
-      </div>
-
-      {photos.length > 0 ? (
-        <div
-          className={`-mx-4 flex snap-x gap-2 overflow-x-auto px-4 empty:hidden lg:mx-0 lg:grid lg:gap-3 lg:overflow-visible lg:px-0 ${
-            photos.length > 1 ? "lg:aspect-[5/2] lg:grid-cols-3 lg:grid-rows-2" : ""
-          }`}
-        >
-          {photos.map((p, i) => (
+    <div className="mz-place">
+      {/* ① 표지 */}
+      <section className={`cover ph-hero ${heroPhoto || fallbackPhoto ? "" : "no-photo"}`} aria-label={name.text}>
+        <div className="cover-media">
+          {/* 바탕은 늘 분류색 색면 — 자체 사진을 못 불러와 SafeImage 가 사라져도 표지가 비지 않는다 */}
+          <span className={`noimg cat-${place.category}`} aria-hidden="true">
+            <span className="glyph">{name.text.replace(/^양양\s*/, "").charAt(0)}</span>
+          </span>
+          {heroPhoto ? (
             <SafeImage
-              key={p}
-              src={photoUrl(p)}
+              src={photoUrl(heroPhoto)}
               alt={tf(lang, "photoAlt", { name: name.text })}
-              className={`aspect-[4/3] w-[85%] shrink-0 snap-start rounded-2xl bg-sea-soft object-cover lg:w-full ${galleryCell(i, photos.length)}`}
+              fallbackSrc={fallbackPhoto}
+              fallbackLabel={t(lang, "categoryPhotoLabel")}
             />
-          ))}
-        </div>
-      ) : visual.photo ? (
-        <PhotoFrame
-          fallback={visual.photo}
-          fallbackLabel={t(lang, "categoryPhotoLabel")}
-          alt=""
-          Icon={visual.Icon}
-          tone={visual.tone}
-          sizes="(min-width: 1024px) 1152px, 100vw"
-          className="aspect-video rounded-2xl lg:aspect-[5/2]"
-        />
-      ) : null}
-
-      {/* 모바일은 한 줄로 차례대로, PC(lg)는 왼쪽 2칸 본문 + 오른쪽 1칸 이용 정보 카드. 글 순서(DOM)는 모바일 순서 그대로 */}
-      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-3 lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10 lg:gap-y-8">
-        <div className="flex flex-col gap-5 lg:col-span-2">
-          <header className="flex flex-col gap-2 lg:gap-3">
-            <div className="flex flex-wrap gap-1.5">
-              {categoryKey ? <Badge tone="muted">{t(lang, categoryKey)}</Badge> : null}
-              {closed ? (
-                <Badge tone="closed">{t(lang, "statusClosed")}</Badge>
-              ) : open ? (
-                <Badge tone="open">{t(lang, "openNow")}</Badge>
-              ) : (
-                <Badge tone="muted">{t(lang, "closedNow")}</Badge>
-              )}
-              {place.status === "participating" ? <Badge tone="partner">{t(lang, "badgePartner")}</Badge> : null}
+          ) : fallbackPhoto ? (
+            <div className="ph-img">
+              <Image src={fallbackPhoto} alt="" fill priority sizes="100vw" />
             </div>
-            <h1 className="text-2xl font-bold leading-snug lg:text-4xl">
-              {name.text}
-              <FallbackNote lang={lang} show={name.fallback} />
-            </h1>
-            {lang === "en" && !name.fallback ? <p className="text-muted lg:text-lg">{place.name_ko}</p> : null}
+          ) : null}
+        </div>
+        <div className="cover-in">
+          <div className="cover-meta rise">
+            <span className="crumb-w">
+              <Link href={placesHref}>{t(lang, "placesTitle")}</Link>
+              {" / "}
+              <Link href={`${placesHref}${placesQueryString({ category: place.category })}`}>{catLabel}</Link>
+            </span>
+            <span className="label">{tf(lang, "placeIndexNo", { no })}</span>
+            <span className="it">{hoodText(hood, lang).name}</span>
+          </div>
+          <div className="ph-title">
+            <div>
+              <span className="p-no rise">{tf(lang, "placeNoCat", { no, cat: catLabel })}</span>
+              <h1 className={`rise d1 ${coverTitleSize(name.text)}`}>{name.text}</h1>
+              {name.sub ? <div className="roman rise d1">{name.sub}</div> : null}
+            </div>
+            <div className="ph-side rise d2">
+              <p>{place.address_ko}</p>
+              <span className={`st ${state}`}>
+                <i aria-hidden="true" />
+                {stateText(lang, state)}
+                {state === "open" && todayText ? ` · ${todayText}` : null}
+              </span>
+            </div>
+          </div>
+          <div className="cover-foot">
+            {!heroPhoto && fallbackPhoto ? <span className="rep">{t(lang, "categoryPhotoLabel")}</span> : <span />}
+            <div className="p-acts rise d3">
+              <a className="btn-solid light" href="#info">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+                  <circle cx="12" cy="9.5" r="2.5" />
+                </svg>
+                {t(lang, "detailInfoTitle")}
+              </a>
+              <SaveButton kind="place" id={place.id} lang={lang} variant="text" className="btn-line light" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ② 본문 + 입장권 */}
+      <div className="wrap">
+        <div className="p-body2">
+          <article className="article">
+            <span className="label kick">{t(lang, "placeAboutKicker")}</span>
             {summary.text ? (
-              <p className="lg:text-lg">
+              <h2>
                 {summary.text}
                 <FallbackNote lang={lang} show={summary.fallback} />
-              </p>
-            ) : null}
-          </header>
-
-          {place.has_english_menu ? (
-            <Link
-              href={`/${lang}/m/${place.code}`}
-              className="flex min-h-12 items-center justify-center rounded-xl bg-salmon-strong px-4 font-bold text-on-sea lg:self-start lg:px-8"
-            >
-              {t(lang, "viewEnglishMenu")}
-            </Link>
-          ) : null}
-        </div>
-
-        <aside
-          aria-label={t(lang, "detailInfoTitle")}
-          className="flex flex-col gap-5 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:rounded-2xl lg:border lg:border-line lg:bg-surface lg:p-6"
-        >
-          <h2 className="hidden text-lg font-bold lg:block">{t(lang, "detailInfoTitle")}</h2>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="font-bold">{t(lang, "address")}</h2>
-            <p>{place.address_ko}</p>
-            <MapLinks lat={place.lat} lng={place.lng} name={place.name_ko} lang={lang} />
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="font-bold">{t(lang, "hours")}</h2>
-            {closed ? <p className="text-muted">{t(lang, "statusClosed")}</p> : <HoursTable hours={place.hours} lang={lang} now={now} />}
-          </section>
-
-          <dl className="rounded-2xl border border-line bg-surface px-4 lg:rounded-none lg:border-x-0 lg:border-b-0 lg:px-0">
-            {phone ? (
-              <InfoRow label={t(lang, "phone")}>
-                <a
-                  href={telHref(phone)}
-                  className="-my-3 inline-flex min-h-11 items-center font-medium text-sea underline underline-offset-4"
-                >
-                  {phone}
-                </a>
-              </InfoRow>
-            ) : null}
-            {isAmenityCategory(place.category) ? null : (
-              <InfoRow label={t(lang, "priceLabel")}>
-                {priceSymbol(place.price_level)} · {t(lang, PRICE_KEY[place.price_level])}
-              </InfoRow>
+              </h2>
+            ) : (
+              <p className="empty-note">{t(lang, "placeNoIntro")}</p>
             )}
-            <InfoRow label={t(lang, "parking")}>{yesNo(lang, place.parking)}</InfoRow>
-            <InfoRow label={t(lang, "foreignCard")}>{yesNo(lang, place.foreign_card)}</InfoRow>
-            {amenities.map((a) =>
-              AMENITY_KEY[a] ? (
-                <InfoRow key={a} label={t(lang, AMENITY_KEY[a])}>
-                  {t(lang, "yes")}
-                </InfoRow>
-              ) : null,
-            )}
-          </dl>
 
-          <VerifiedLine
-            method={place.verified_method}
-            at={place.verified_at}
-            by={place.verified_by_name}
-            lang={lang}
-            className="hidden lg:block"
-          />
-        </aside>
+            {howTo.text ? (
+              <section className="art-sec">
+                <span className="label">{t(lang, "placeHowKicker")}</span>
+                <h3>{t(lang, "howToGet")}</h3>
+                <p className={howTo.text.length > 60 ? "lead" : undefined}>
+                  {howTo.text}
+                  <FallbackNote lang={lang} show={howTo.fallback} />
+                </p>
+              </section>
+            ) : null}
 
-        <div className="flex flex-col gap-5 lg:col-span-2 lg:gap-8">
-          {howTo.text ? (
-            <section className="flex flex-col gap-2">
-              <h2 className="font-bold lg:text-lg">{t(lang, "howToGet")}</h2>
-              <p>
-                {howTo.text}
-                <FallbackNote lang={lang} show={howTo.fallback} />
-              </p>
-            </section>
-          ) : null}
+            {/* 짧은 소개만 있는 곳도 본문 단이 비어 보이지 않게 — 지어낸 문장 없이 DB 값으로 된 작은 정보 줄 */}
+            <dl className="art-facts">
+              <div>
+                <dt>{t(lang, "factCategory")}</dt>
+                <dd>
+                  <span className={`cat-dot cat-${place.category}`} aria-hidden="true" />
+                  {catLabel}
+                </dd>
+              </div>
+              <div>
+                <dt>{t(lang, "factHood")}</dt>
+                <dd>{hoodText(hood, lang).name}</dd>
+              </div>
+              {drawable ? (
+                <div>
+                  <dt>{t(lang, "factCoords")}</dt>
+                  <dd className="num">
+                    {place.lat.toFixed(4)} N · {place.lng.toFixed(4)} E
+                  </dd>
+                </div>
+              ) : null}
+              {place.verified_at ? (
+                <div>
+                  <dt>{t(lang, "factChecked")}</dt>
+                  <dd>
+                    {t(lang, METHOD_KEY[place.verified_method] ?? "methodPublic")}
+                    <small>{formatVerifiedDate(place.verified_at, lang)}</small>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
-          <VerifiedLine
-            method={place.verified_method}
-            at={place.verified_at}
-            by={place.verified_by_name}
-            lang={lang}
-            className="lg:hidden"
-          />
-
-          {stories.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="font-bold lg:text-lg">{t(lang, "placeStoriesTitle")}</h2>
-              <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-4">
-                {stories.map((s) => (
-                  <li key={s.id}>
-                    <StoryCard story={s} lang={lang} size="sm" />
-                  </li>
+            {morePhotos.length ? (
+              <figure className={`art-fig ${morePhotos.length === 1 ? "one" : ""}`}>
+                {morePhotos.slice(0, 2).map((p, i) => (
+                  <div key={p} className={i === 0 ? "f1" : "f2"}>
+                    <SafeImage src={photoUrl(p)} alt={tf(lang, "photoAlt", { name: name.text })} />
+                  </div>
                 ))}
-              </ul>
-            </section>
-          ) : null}
+              </figure>
+            ) : null}
 
-          {activities.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="font-bold lg:text-lg">{t(lang, "placeActivitiesTitle")}</h2>
-              <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4">
-                {activities.map(({ activity: a, offSeason }) => (
-                  <li key={a.id}>
-                    <ActivityCard activity={a} lang={lang} dimmed={offSeason} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+            {place.has_english_menu ? (
+              <section className="art-sec">
+                <span className="label">{t(lang, "placeMenuKicker")}</span>
+                <p>{t(lang, "placeMenuBody")}</p>
+                <Link className="btn-line" href={`/${lang}/m/${place.code}`}>
+                  {t(lang, "viewEnglishMenu")}
+                  <Arrow />
+                </Link>
+              </section>
+            ) : null}
+          </article>
 
-          {/* 팁: 「바뀌었어요·꿀팁·가는 법」 목록 + 쓰기 폼 (<section id="tips">) */}
-          <TipList lang={lang} targetType="place" targetId={place.id} />
+          <aside className="pass" id="info" aria-labelledby="pass-title">
+            <div className="pass-band">
+              <span className="label">{t(lang, "passBand")}</span>
+              <span className="it">No. {no}</span>
+            </div>
+            <div className="pass-main">
+              <h2 id="pass-title">
+                {name.text}
+                {name.sub ? <small>{name.sub}</small> : null}
+              </h2>
+              {known && !closed ? (
+                <ol className="week" aria-label={t(lang, "passWeekLabel")}>
+                  {WEEK_MON_FIRST.map(({ key, index }) => {
+                    const off = !(place.hours[key] ?? []).length;
+                    const label = t(lang, WEEKDAY_KEYS[index]);
+                    return (
+                      <li
+                        key={key}
+                        className={`${index === todayIdx ? "today" : ""} ${off ? "off" : ""}`}
+                        aria-label={`${label}${index === todayIdx ? ` (${t(lang, "today")})` : ""} · ${off ? t(lang, "dayOff") : (place.hours[key] ?? []).map(([o, c]) => `${o}–${c}`).join(", ")}`}
+                      >
+                        <span aria-hidden="true">{label}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : null}
+              <dl>
+                <div>
+                  <dt>{t(lang, "passNow")}</dt>
+                  <dd>
+                    <span className={`st ${state}`}>
+                      <i aria-hidden="true" />
+                      {stateText(lang, state)}
+                    </span>
+                    {!closed && known ? <small>{todayText ?? t(lang, "dayOff")}</small> : null}
+                  </dd>
+                </div>
+                {known && !closed ? (
+                  <div>
+                    <dt>{t(lang, "hours")}</dt>
+                    <dd>
+                      <HoursTable hours={place.hours} lang={lang} now={now} />
+                    </dd>
+                  </div>
+                ) : null}
+                {amenityMode ? null : (
+                  <div>
+                    <dt>{t(lang, "priceLabel")}</dt>
+                    <dd>
+                      {priceSymbol(place.price_level)} · {t(lang, PRICE_KEY[place.price_level])}
+                    </dd>
+                  </div>
+                )}
+                <div>
+                  <dt>{t(lang, "parking")}</dt>
+                  <dd>{yesNo(lang, place.parking)}</dd>
+                </div>
+                <div>
+                  <dt>{t(lang, "foreignCard")}</dt>
+                  <dd>{yesNo(lang, place.foreign_card)}</dd>
+                </div>
+                {amenities.some((a) => AMENITY_KEY[a]) ? (
+                  <div>
+                    <dt>{t(lang, "passAmenities")}</dt>
+                    <dd>{amenities.filter((a) => AMENITY_KEY[a]).map((a) => t(lang, AMENITY_KEY[a])).join(" · ")}</dd>
+                  </div>
+                ) : null}
+                {phone ? (
+                  <div>
+                    <dt>{t(lang, "phone")}</dt>
+                    <dd>
+                      <a className="tel" href={telHref(phone)}>
+                        {phone}
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>{t(lang, "address")}</dt>
+                  <dd>{place.address_ko}</dd>
+                </div>
+              </dl>
+              <MapLinks lat={place.lat} lng={place.lng} name={place.name_ko} lang={lang} variant="pass" />
+            </div>
+            <div className="pass-stub">
+              <div>
+                <b className={state === "open" ? "open" : ""}>{state === "none" ? catLabel : stateText(lang, state)}</b>
+                <span>{!closed && known ? tf(lang, "passStubToday", { h: todayText ?? t(lang, "dayOff") }) : `No. ${no}`}</span>
+              </div>
+              {stamp ? (
+                <span className="pass-stamp" aria-label={tf(lang, "passCheckedLabel", { date: formatVerifiedDate(place.verified_at, lang) })}>
+                  <i aria-hidden="true">{t(lang, "passChecked")}</i>
+                  <span aria-hidden="true">{stamp}</span>
+                </span>
+              ) : null}
+            </div>
+            <VerifiedLine method={place.verified_method} at={place.verified_at} by={place.verified_by_name} lang={lang} className="src" />
+          </aside>
         </div>
       </div>
-    </article>
+
+      {/* ③ 확대 약도 + 근처 세 곳 */}
+      {near.length ? (
+        <section className="p-map" aria-labelledby="near-title">
+          <div className="wrap">
+            <header className="sec-head">
+              <span className="sec-no">{no}</span>
+              <div>
+                <span className="label">{t(lang, "placeNearKicker")}</span>
+                <h2 id="near-title">{tf(lang, "placeNearTitle", { name: name.text, n: String(near.length) })}</h2>
+              </div>
+              <p>{tf(lang, "placeNearLead", { name: name.text })}</p>
+            </header>
+            <div className={`p-around ${drawable ? "" : "no-map"}`}>
+              {drawable ? (
+                <div className="p-mapcard">
+                  <span className="tape" aria-hidden="true" />
+                  <div className="sheet-h">
+                    <p className="hand">{t(lang, "mapFocusHint")}</p>
+                    <span className="it">
+                      {place.lat.toFixed(4)} N · {place.lng.toFixed(4)} E
+                    </span>
+                  </div>
+                  <SketchMap
+                    places={mapPlaces}
+                    lang={lang}
+                    uid="place-map"
+                    variant="focus"
+                    focusId={place.id}
+                    nearIds={near.map((n) => n.item.id)}
+                  />
+                </div>
+              ) : null}
+              <ol className="near3">
+                {near.map(({ item: p, km }) => {
+                  const nm = placeName(p, lang);
+                  const sm = pickText(p as unknown as Record<string, unknown>, "summary", lang);
+                  const s = placeState(p, now);
+                  const cl = CATEGORY_KEY[p.category] ? t(lang, CATEGORY_KEY[p.category]) : p.category;
+                  return (
+                    <li key={p.id} data-row={p.id}>
+                      <Link href={`/${lang}/place/${p.slug}`} className={`nc cat-${p.category}`}>
+                        <span className="nc-d">
+                          {formatDistance(km)}
+                          <small>{t(lang, "straightLine")}</small>
+                        </span>
+                        <span className="nc-cat">
+                          {numbers.get(p.id)} · {cl}
+                        </span>
+                        <b>{nm.text}</b>
+                        {sm.text ? <p>{sm.text}</p> : null}
+                        {s === "none" ? null : (
+                          <span className="nc-st">
+                            <i aria-hidden="true" />
+                            {stateText(lang, s)}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ④ 이 장소가 나오는 이야기 (실제 연결된 것만) */}
+      {stories.length ? (
+        <section className="p-more" aria-labelledby="stories-title">
+          <div className="wrap">
+            <header className="sec-head">
+              <span className="sec-no">04</span>
+              <div>
+                <span className="label">{t(lang, "placeStoriesKicker")}</span>
+                <h2 id="stories-title">{t(lang, "placeStoriesTitle")}</h2>
+              </div>
+              <Link className="more" href={`/${lang}/stories`}>
+                {t(lang, "storiesSeeAllShort")}
+                <Arrow />
+              </Link>
+            </header>
+            <div className={`p-stories ${stories.length === 1 ? "one" : ""}`}>
+              {stories.slice(0, 3).map((s, i) => {
+                const r = s as unknown as Record<string, unknown>;
+                const title = pickText(r, "title", lang);
+                const sum = pickText(r, "summary", lang);
+                return (
+                  <Link key={s.id} className={`story ${i === 0 ? "big" : ""}`} href={`/${lang}/stories/${s.slug}`}>
+                    <div className="ph">
+                      <StoryPhoto story={s} lang={lang} sizes={i === 0 ? "(min-width: 861px) 58vw, 100vw" : "(min-width: 861px) 40vw, 100vw"} />
+                    </div>
+                    <span className="label">{STORY_TYPE_KEY[s.type] ? t(lang, STORY_TYPE_KEY[s.type]) : s.type}</span>
+                    <h4>
+                      {title.text}
+                      <FallbackNote lang={lang} show={title.fallback} />
+                    </h4>
+                    {sum.text ? <p>{sum.text}</p> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ⑤ 이 장소의 놀거리 (실제 연결된 것만) */}
+      {activities.length ? (
+        <section className="p-more" aria-labelledby="acts-title">
+          <div className="wrap">
+            <header className="sec-head">
+              <span className="sec-no">03</span>
+              <div>
+                <span className="label">{t(lang, "placeActivitiesKicker")}</span>
+                <h2 id="acts-title">{t(lang, "placeActivitiesTitle")}</h2>
+              </div>
+              <Link className="more" href={`/${lang}/play`}>
+                {t(lang, "playSeeAllShort")}
+                <Arrow />
+              </Link>
+            </header>
+            <div className="rel">
+              {activities.map(({ activity: a, offSeason }) => {
+                const r = a as unknown as Record<string, unknown>;
+                const title = pickText(r, "title", lang);
+                const desc = pickText(r, "desc", lang);
+                const photo = PLAY_VISUAL[a.category]?.photo;
+                const label = [PLAY_CATEGORY_KEY[a.category] ? t(lang, PLAY_CATEGORY_KEY[a.category]) : a.category, activityWhen(a, lang)]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <Link key={a.id} href={`/${lang}/activity/${a.id}`} className={offSeason ? "is-off" : ""}>
+                    <div className="rph">
+                      {photo ? (
+                        <>
+                          <Image src={photo} alt="" fill sizes="200px" />
+                          <span className="rep">{t(lang, "categoryPhotoLabel")}</span>
+                        </>
+                      ) : (
+                        <span className={`noimg play-${a.category}`} aria-hidden="true">
+                          <span className="glyph">{title.text.charAt(0)}</span>
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="label">{label}</span>
+                      <h4>
+                        {title.text}
+                        <FallbackNote lang={lang} show={title.fallback} />
+                      </h4>
+                      {desc.text ? <p>{desc.text}</p> : null}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ⑥ 팁 · 정보 수정 제보 (<section id="tips">) */}
+      <div className="p-tips">
+        <div className="wrap">
+          <div className="p-tips-in">
+            <TipList lang={lang} targetType="place" targetId={place.id} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

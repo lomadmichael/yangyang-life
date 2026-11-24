@@ -1,4 +1,4 @@
-"""웹앱(PWA) 아이콘 생성 — sea 바탕에 흰 물결 세 줄 (src/components/icons.tsx 의 IconWave 모양).
+"""웹앱(PWA) 아이콘 생성 — 쪽빛 남색(deep) 바탕에 v4 로고 심벌(원·떠오르는 해·수평선·물결 두 줄, src/components/Logo.tsx 와 같은 모양).
 
 실행 (저장소 루트에서):
     PYTHONUTF8=1 python scripts/make-pwa-icons.py
@@ -10,7 +10,7 @@
     public/icons/apple-touch-icon.png  iOS 홈 화면 180×180 (투명 없음)
     src/app/favicon.ico                16·32·48
 
-색은 src/app/globals.css 토큰 값을 읽어 쓴다 (--sea 바탕, --on-sea 물결). 새 색을 만들지 않는다.
+색은 src/app/globals.css 토큰 값을 읽어 쓴다 (--deep 바탕, --on-deep 선, --sunrise 해). 새 색을 만들지 않는다.
 의존성: Pillow 만.
 """
 
@@ -36,60 +36,81 @@ def token(name: str) -> tuple[int, int, int]:
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
-SEA = token("sea")
-ON_SEA = token("on-sea")
+DEEP = token("deep")
+ON_DEEP = token("on-deep")
+SUNRISE = token("sunrise")
 
 
-def wave_points(x0: float, x1: float, y: float, amp: float, periods: float, steps: int = 240):
-    """IconWave 한 줄: 양끝·가운데가 낮고(골) 그 사이가 높은(마루) 물결."""
-    pts = []
+def quad(p0, c, p1, steps):
+    """2차 베지어 곡선 위 점들."""
+    out = []
     for i in range(steps + 1):
         t = i / steps
-        x = x0 + (x1 - x0) * t
-        yy = y - amp * (1 - math.cos(2 * math.pi * periods * t)) / 2
-        pts.append((x, yy))
+        x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * c[0] + t ** 2 * p1[0]
+        y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * c[1] + t ** 2 * p1[1]
+        out.append((x, y))
+    return out
+
+
+def wave(x0: float, y: float, widths: list[float]):
+    """SVG 'M x0 y q7.5 -5 15 0 t15 0 …' 와 같은 물결 — t 는 앞 조절점을 뒤집으므로 위·아래로 번갈아 휜다."""
+    pts, x, up = [], x0, True
+    for w in widths:
+        c = (x + w / 2, y - 5 * (w / 15) if up else y + 5 * (w / 15))
+        pts += quad((x, y), c, (x + w, y), 60)
+        x += w
+        up = not up
     return pts
 
 
-def draw_waves(draw: ImageDraw.ImageDraw, size: int, scale: float) -> None:
-    """IconWave 의 24×24 좌표계를 가운데 기준으로 scale 배(아이콘 폭 대비) 키워 그린다.
-
-    scale = 물결 묶음 폭 / 아이콘 폭. 24 칸 중 물결은 x 2.75~21.25, y 8~18.5 를 쓴다.
-    """
-    unit = size * scale / 18.5  # 물결 폭 18.5 칸
-    cx = cy = size / 2
-    width = max(1, round(1.9 * unit))  # 원래 1.75 보다 조금 굵게 — 작은 크기에서도 보이게
-    for base in (9.5, 14.0, 18.5):
-        # 24칸 좌표 → 픽셀 (가운데 정렬: x 중심 12, y 중심 (8+18.5)/2 = 13.25)
-        pts = [
-            (cx + (x - 12) * unit, cy + (yy - 13.25) * unit)
-            for x, yy in wave_points(2.75, 21.25, base, 1.5, 2, steps=size * 2)
-        ]
-        # 굵은 draw.line 은 곡선 이음매에 빗살 자국이 남는다 → 원을 촘촘히 찍어 둥근 붓질로 그린다
-        r = width / 2
-        for px, py in pts:
-            draw.ellipse((px - r, py - r, px + r, py + r), fill=ON_SEA)
+def symbol_strokes(ring: bool):
+    """logo.svg 심벌(112×112 좌표): 원 · 떠오르는 해(반원) · 수평선 · 물결 두 줄. (점 목록, 색, 굵기)"""
+    strokes = []
+    if ring:
+        strokes.append(([(56 + 54.5 * math.cos(a / 180 * math.pi), 56 + 54.5 * math.sin(a / 180 * math.pi)) for a in range(0, 361)], ON_DEEP, 2.4))
+    strokes.append(([(56 + 26 * math.cos(a / 180 * math.pi), 60 - 26 * math.sin(a / 180 * math.pi)) for a in range(0, 181)], SUNRISE, 3.6))
+    strokes.append(([(14 + i, 60) for i in range(0, 85)], ON_DEEP, 2.4))
+    strokes.append((wave(26, 74, [15, 15, 15, 15]), ON_DEEP, 2.4))
+    strokes.append((wave(38, 86, [15, 15, 9]), ON_DEEP, 2.4))
+    return strokes
 
 
-def make(size: int, scale: float) -> Image.Image:
+def make(size: int, scale: float, ring: bool = True, weight: float = 1.0) -> Image.Image:
+    """scale = 심벌(112칸) 폭 / 아이콘 폭. weight = 선 굵기 배율(작은 아이콘은 굵게)."""
     big = size * SS
-    im = Image.new("RGB", (big, big), SEA)
-    draw_waves(ImageDraw.Draw(im), big, scale)
+    im = Image.new("RGB", (big, big), DEEP)
+    draw = ImageDraw.Draw(im)
+    unit = big * scale / 112
+    off = (big - 112 * unit) / 2
+    for pts, color, w in symbol_strokes(ring):
+        r = w * weight * unit / 2
+        # 굵은 draw.line 은 곡선 이음매에 빗살 자국이 남는다 → 원을 촘촘히 찍어 둥근 붓질로 그린다
+        prev = None
+        for x, y in pts:
+            px, py = off + x * unit, off + y * unit
+            if prev:
+                n = max(1, int(math.hypot(px - prev[0], py - prev[1]) / max(1, r / 2)))
+                for k in range(1, n + 1):
+                    qx = prev[0] + (px - prev[0]) * k / n
+                    qy = prev[1] + (py - prev[1]) * k / n
+                    draw.ellipse((qx - r, qy - r, qx + r, qy + r), fill=color)
+            else:
+                draw.ellipse((px - r, py - r, px + r, py + r), fill=color)
+            prev = (px, py)
     return im.resize((size, size), Image.LANCZOS)
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    # 일반·애플 아이콘: 물결 폭 = 아이콘 폭의 62%
-    make(192, 0.62).save(OUT / "icon-192.png", optimize=True)
-    make(512, 0.62).save(OUT / "icon-512.png", optimize=True)
-    make(180, 0.62).save(OUT / "apple-touch-icon.png", optimize=True)
-    # 마스크 아이콘: 안전 영역 = 가운데 지름 80% 원. 물결 묶음(폭 18.5 × 높이 ~12.6 칸) 대각선이
-    # 원 안에 들도록 폭 50% → 대각선 ≈ 0.5 × √(1 + (12.6/18.5)²) ≈ 0.60 < 0.80
-    make(512, 0.50).save(OUT / "maskable-512.png", optimize=True)
-    # favicon: 작은 크기에서는 물결을 크게
+    # 일반·애플 아이콘: 남색 바탕 가운데 심벌(원 포함), 심벌 폭 = 아이콘 폭의 72%
+    make(192, 0.72, weight=1.4).save(OUT / "icon-192.png", optimize=True)
+    make(512, 0.72, weight=1.2).save(OUT / "icon-512.png", optimize=True)
+    make(180, 0.72, weight=1.4).save(OUT / "apple-touch-icon.png", optimize=True)
+    # 마스크 아이콘: 안전 영역 = 가운데 지름 80% 원. 바깥 원은 빼고(가장자리가 잘리므로) 해·수평선·물결만 폭 62%로
+    make(512, 0.62, ring=False, weight=1.3).save(OUT / "maskable-512.png", optimize=True)
+    # favicon: 작은 크기 — 원 없이 크게, 선을 굵게
     # Next(Turbopack)는 ICO 안의 PNG 가 RGBA 가 아니면 빌드를 멈춘다 → RGBA 로 저장
-    fav = make(256, 0.70).convert("RGBA")
+    fav = make(256, 0.98, ring=False, weight=2.6).convert("RGBA")
     fav.save(ROOT / "src" / "app" / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])
     for p in sorted(OUT.iterdir()):
         print(p.relative_to(ROOT).as_posix(), Image.open(p).size)

@@ -1,13 +1,7 @@
-import { t, tf, type DictKey, type Lang } from "@/i18n";
+import { t, tf, type Lang } from "@/i18n";
 import { formatVerifiedDate } from "@/lib/format";
+import { METHOD_KEY } from "@/lib/labels";
 import type { VerifiedMethod } from "@/lib/types";
-
-const METHOD_KEY: Record<VerifiedMethod, DictKey> = {
-  visit: "methodVisit",
-  phone: "methodPhone",
-  interview: "methodInterview",
-  public: "methodPublic",
-};
 
 /**
  * 「정리·확인: {by} · {YYYY. M. D.}」 / "Checked by {by} · {Mon D, YYYY}" + 확인 방법.

@@ -1,24 +1,72 @@
 @import "tailwindcss";
 
 /*
- * 양양생활 색 토큰 — 화면을 만들 때는 아래 토큰(또는 Tailwind 의 bg-sea, text-ink 등)만 쓴다.
- * 바다(sea)·모래(sand)·소나무(pine)·연어(salmon)에서 따온 팔레트.
+ * 양양생활 색 토큰 (v4 「바다 잡지」 — 종이·먹·쪽빛 남색·해돋이) — 화면을 만들 때는 아래 토큰
+ * (또는 Tailwind 의 bg-deep, text-ink-2, border-rule 등)만 쓴다. 임의 hex·인라인 색 금지.
+ *
+ * ── 새 이름 (v4) ──
+ *   paper / paper-2 / paper-3 / paper-card   종이 바탕과 한 단계씩 진한 종이, 약도·카드용 밝은 종이
+ *   ink / ink-2                               먹(본문) / 연한 먹(보조 글자, 종이 위 대비 10:1)
+ *   deep / deep-2 / deep-soft                 쪽빛 남색(뒤집힌 단락·숫자) / 보조 / 연한 바다 면
+ *   on-deep / on-deep-2                       남색 위 글자 / 남색 위 보조 글자
+ *   sunrise / sunrise-ink / sunrise-pale(-2)  해돋이 주황(장식·선) / 글자용 진한 주황 / 남색·사진 위 살구 글자
+ *   rule                                      가는 선 (먹 22%)
+ *   c-food … c-life                           분류색 (채도 낮춘 색면, 흰 글자 대비 4.5:1 이상)
+ *   map-sand / map-reed / map-pine / map-trunk / map-board   손그림 약도 그림 안에서만
+ *
+ * ── 옛 이름 (v1~v3 화면이 쓰는 이름 — 지우지 않고 새 팔레트 값으로 다시 잡았다) ──
+ *   sea = deep, sea-strong = 더 진한 남색, sea-soft = deep-soft, salmon = sunrise, salmon-strong = sunrise-ink,
+ *   pine = 영업 중 초록, sand = paper, surface = 밝은 종이 카드, muted = 보조 글자, line = 구분선
  */
 :root {
-  --sea: #0f5e8c;          /* 주 색: 버튼·링크 */
-  --sea-strong: #0a4669;   /* 주 색 눌림/호버 */
-  --sea-soft: #e6f1f8;     /* 주 색 옅은 바탕 */
-  --salmon: #e8735a;       /* 강조: 점·밑줄 같은 장식 (글자 바탕으로 쓰면 대비 부족) */
-  --salmon-strong: #a8412b;/* 강조 버튼 바탕 — 흰 글자 대비 6:1 (WCAG AA) */
-  --salmon-soft: #fbe9e4;  /* 강조 옅은 바탕 (배지) */
-  --pine: #2f6b4f;         /* 보조: 자연·체험·영업 중 */
-  --pine-soft: #e7f1ec;    /* 보조 옅은 바탕 (배지) */
-  --on-sea: #ffffff;       /* 진한 바탕(sea·salmon-strong·pine) 위 글자 */
-  --sand: #f7f3ec;         /* 페이지 바탕 */
-  --surface: #ffffff;      /* 카드 바탕 */
-  --ink: #1d2328;          /* 본문 글자 */
-  --muted: #5f6b75;        /* 보조 글자 */
-  --line: #e2ddd3;         /* 구분선 */
+  /* v4 새 팔레트 */
+  --paper: #f4f0e6;
+  --paper-2: #eae4d6;
+  --paper-3: #dfd7c5;
+  --paper-card: #f8f4eb;
+  --ink-2: #34383b;
+  --deep: #16294f;
+  --deep-2: #2b4373;
+  --deep-soft: #dfe4ec;
+  --on-deep: #f4f1ea;
+  --on-deep-2: #c9d3e6;
+  --sunrise: #e07a4e;       /* 장식·선·큰 숫자 (작은 글자에는 sunrise-ink) */
+  --sunrise-ink: #a8461f;   /* 종이 위 주황 글자 — 대비 5.4:1 */
+  --sunrise-pale: #ffc6a6;  /* 남색·사진 위 살구 글자·아이콘 */
+  --sunrise-pale-2: #ffd2b8;
+  --rule: color-mix(in srgb, var(--ink) 22%, transparent);
+  --c-food: #8e4a38;
+  --c-cafe: #7e6326;
+  --c-stay: #6b5140;
+  --c-surf: #34587a;
+  --c-bar: #5e4257;
+  --c-spot: #43604d;
+  --c-life: #3a3a3a;
+  --open: #1f6b52;          /* 영업 중 글자 */
+  --open-dot: #2f8f6f;      /* 영업 중 점 */
+  --shade: #0a161c;         /* 사진 위 어두운 덮개 (투명도와 섞어 쓴다) */
+  /* 손그림 약도 전용 (약도 그림 안에서만 쓴다) */
+  --map-sand: #e8d9b5;      /* 모래사장 띠 */
+  --map-reed: #8b6f55;      /* 석호 갈대 */
+  --map-pine: #4f6b57;      /* 소나무 외곽선 */
+  --map-trunk: #7a5e4a;     /* 소나무 줄기 */
+  --map-board: #f1e4c6;     /* 서핑보드 */
+
+  /* 옛 이름 — 새 팔레트로 다시 잡음 (tests/pwa.test.ts 가 sea·sand 값을 PWA 색과 대조한다) */
+  --sea: #16294f;
+  --sea-strong: #0e1c3a;
+  --sea-soft: #dfe4ec;
+  --salmon: #e07a4e;
+  --salmon-strong: #a8461f;
+  --salmon-soft: #f6e4d9;
+  --pine: #1f6b52;
+  --pine-soft: #e2ece4;
+  --on-sea: #ffffff;
+  --sand: #f4f0e6;
+  --surface: #fbf9f4;
+  --ink: #16181a;
+  --muted: #4f5458;
+  --line: #d9d1c0;
 }
 
 @theme inline {
@@ -36,13 +84,43 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --font-sans: "YL Won", var(--font-noto-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-paper-card: var(--paper-card);
+  --color-ink-2: var(--ink-2);
+  --color-deep: var(--deep);
+  --color-deep-2: var(--deep-2);
+  --color-deep-soft: var(--deep-soft);
+  --color-on-deep: var(--on-deep);
+  --color-on-deep-2: var(--on-deep-2);
+  --color-sunrise: var(--sunrise);
+  --color-sunrise-ink: var(--sunrise-ink);
+  --color-sunrise-pale: var(--sunrise-pale);
+  --color-sunrise-pale-2: var(--sunrise-pale-2);
+  --color-rule: var(--rule);
+  --color-open: var(--open);
+  --color-open-dot: var(--open-dot);
+  --color-c-food: var(--c-food);
+  --color-c-cafe: var(--c-cafe);
+  --color-c-stay: var(--c-stay);
+  --color-c-surf: var(--c-surf);
+  --color-c-bar: var(--c-bar);
+  --color-c-spot: var(--c-spot);
+  --color-c-life: var(--c-life);
+
+  /* 글꼴 — next/font 변수는 [lang]/layout.tsx 에서 html 에 붙는다. 관리·인쇄 화면은 변수가 없어 뒤 글꼴로 간다 */
+  --font-sans: "YL Won", var(--font-plex-kr), var(--font-noto-sans-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-serif: var(--font-noto-serif-kr), "Nanum Myeongjo", "AppleMyungjo", serif;
+  --font-display: var(--font-cormorant), var(--font-noto-serif-kr), "Times New Roman", serif;
+  --font-hand: var(--font-nanum-pen), cursive;
 }
 
 /*
- * 원화 기호(₩)만 시스템 글꼴로 — Noto Sans KR 의 ₩ 는 가운데 가로획이 한 줄뿐이고 아주 가늘어
+ * 원화 기호(₩)만 시스템 글꼴로 — 웹 글꼴의 ₩ 는 가운데 가로획이 가늘어
  * 14~16px 에서는 획이 안 보여 「W」로 읽힌다. 맑은 고딕·애플 SD 산돌고딕 Neo 의 ₩ 는 두 줄 획.
- * 새 글꼴을 내려받지 않는다(local 만). 둘 다 없는 기기(안드로이드 등)는 다음 글꼴(Noto)로 넘어간다.
+ * 새 글꼴을 내려받지 않는다(local 만). 둘 다 없는 기기(안드로이드 등)는 다음 글꼴로 넘어간다.
  */
 @font-face {
   font-family: "YL Won";
@@ -63,6 +141,11 @@ body {
   font-family: var(--font-sans);
   word-break: keep-all;      /* 한글은 낱말 중간에서 줄이 갈리지 않게 */
   overflow-wrap: anywhere;   /* 아주 긴 영문·주소는 그래도 화면 밖으로 안 나가게 */
+}
+
+:focus-visible {
+  outline: 2px solid var(--sunrise);
+  outline-offset: 3px;
 }
 
 /* 화면 아래 고정 메뉴 — 아이폰 홈 바 영역만큼 아래 여백 */

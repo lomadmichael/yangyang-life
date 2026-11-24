@@ -109,3 +109,28 @@ export function seasonLabel(months: number[], lang: Lang): string | null {
     .map((m) => monthName(m, lang))
     .join(", ");
 }
+
+/** 놀거리 때: 기간 행사는 날짜 범위, 상시형은 운영 계절(없으면 요일) — 홈·장소 상세가 같이 쓴다 */
+export function activityWhen(
+  a: { kind: "dated" | "always"; starts_on: string | null; ends_on: string | null; season_months?: number[] | null; weekdays: number[] },
+  lang: Lang,
+): string {
+  if (a.kind === "dated") return formatDateRange(a.starts_on, a.ends_on, lang);
+  return seasonLabel(a.season_months ?? [], lang) ?? formatWeekdays(a.weekdays, lang);
+}
+
+/**
+ * 기간 행사 날짜를 큰 숫자로: "2026-10-25","2026-11-30" → { from: "10.25", to: "11.30" } (같은 날이면 to=null).
+ * 언어와 무관한 숫자 표기 — 놀거리 목록·상세에서 날짜를 크게 쓸 때. 날짜가 없거나 형식이 틀리면 null.
+ */
+export function bigDateRange(starts: string | null, ends: string | null): { from: string | null; to: string | null } | null {
+  const md = (ymd: string | null) => {
+    const m = ymd ? /^\d{4}-(\d{2})-(\d{2})$/.exec(ymd) : null;
+    return m ? `${m[1]}.${m[2]}` : null;
+  };
+  const from = md(starts);
+  const to = md(ends);
+  if (!from && !to) return null;
+  if (from && to && starts === ends) return { from, to: null };
+  return { from, to };
+}

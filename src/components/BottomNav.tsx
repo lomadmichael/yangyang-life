@@ -7,7 +7,7 @@ import { t, type Lang } from "@/i18n";
 import { activeTab, isMenuBoardPath, NAV_TABS, type Tab } from "@/lib/nav";
 import { IconBook, IconHome, IconPin, IconUser, IconWave } from "./icons";
 
-// 하단 메뉴 5칸(모바일). PC(lg 이상)는 TopNav 가 대신한다. 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
+// 하단 메뉴 5칸(모바일) — 종이 바탕·먹 선, 현재 칸 위에 해돋이 주황 띠(magazine.css .tabbar). PC(lg 이상)는 TopNav 가 대신한다. 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
 
 const ICONS: Record<Tab, ComponentType<{ className?: string }>> = {
   home: IconHome,
@@ -29,28 +29,16 @@ export function BottomNav({ lang }: { lang: Lang }) {
     <div className="lg:hidden">
       {/* 고정 메뉴에 본문 끝(푸터)이 가리지 않도록 같은 높이만큼 비워 둔다 */}
       <div aria-hidden="true" className="safe-bottom">
-        <div className="h-16" />
+        <div className="tabbar-space" />
       </div>
-      <nav
-        aria-label={t(lang, "navLabel")}
-        className="safe-bottom fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface"
-      >
-        <ul className="mx-auto flex max-w-md">
+      <nav aria-label={t(lang, "navLabel")} className="tabbar safe-bottom">
+        <ul>
           {NAV_TABS.map(({ tab, path, label }) => {
-            const active = tab === current;
             const Icon = ICONS[tab];
             return (
-              <li key={tab} className="flex-1">
-                <Link
-                  href={`/${lang}${path}`}
-                  aria-current={active ? "page" : undefined}
-                  className={
-                    active
-                      ? "flex h-16 flex-col items-center justify-center gap-0.5 text-xs font-medium text-sea"
-                      : "flex h-16 flex-col items-center justify-center gap-0.5 text-xs text-muted hover:text-ink"
-                  }
-                >
-                  <Icon className="h-6 w-6" />
+              <li key={tab}>
+                <Link href={`/${lang}${path}`} aria-current={tab === current ? "page" : undefined}>
+                  <Icon />
                   {t(lang, label)}
                 </Link>
               </li>

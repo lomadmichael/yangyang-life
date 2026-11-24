@@ -16,21 +16,21 @@ const DAY_ORDER: { key: Weekday; index: number }[] = [
 /** 요일별 영업시간 (월→일), 오늘 줄은 굵게. 끝 ≤ 시작이면 다음 날 새벽까지라 그대로 "18:00–02:00" */
 export function HoursTable({ hours, lang, now }: { hours: WeeklyHours; lang: Lang; now: Date }) {
   const hasAny = DAY_ORDER.some(({ key }) => (hours[key] ?? []).length > 0);
-  if (!hasAny) return <p className="text-sm text-muted">{t(lang, "hoursUnknown")}</p>;
+  if (!hasAny) return <p className="text-base text-ink-2">{t(lang, "hoursUnknown")}</p>;
   const today = seoulParts(now).weekday;
 
   return (
-    <dl className="grid grid-cols-[3.5rem_1fr] gap-y-1 text-sm">
+    <dl className="grid grid-cols-[3.5rem_1fr] gap-y-1 text-base">
       {DAY_ORDER.map(({ key, index }) => {
         const ranges = hours[key] ?? [];
         const isToday = index === today;
         return (
-          <div key={key} className={`contents ${isToday ? "font-bold" : ""}`}>
+          <div key={key} className={`contents ${isToday ? "font-bold text-deep" : ""}`}>
             <dt>
               {t(lang, WEEKDAY_KEYS[index])}
               {isToday ? <span className="sr-only"> ({t(lang, "today")})</span> : null}
             </dt>
-            <dd className={ranges.length ? "" : "text-muted"}>
+            <dd className={ranges.length ? "tabular-nums" : "text-ink-2"}>
               {ranges.length ? ranges.map(([o, c]) => `${o}–${c}`).join(", ") : t(lang, "dayOff")}
             </dd>
           </div>

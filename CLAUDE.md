@@ -12,6 +12,7 @@
 | 내 저장·내 팁 `/[lang]/my` | `src/app/[lang]/my` |
 | 가게 상세 `/[lang]/place/[slug]` · 놀거리 상세 `/[lang]/activity/[id]` | `src/app/[lang]/place`, `activity` |
 | 만든 사람들 `/[lang]/makers` · 메뉴 QR 착지 `/[lang]/m/[code]` | `src/app/[lang]/makers`, `m` |
+| 공개 화면 틀(글꼴·머리/하단 메뉴·푸터) · 지면 스타일 | `src/app/[lang]/layout.tsx` · `src/app/globals.css`(토큰) · `magazine.css` · `magazine-places.css` · `magazine-pages.css` |
 | 팁 제보 서버 액션 | `src/app/[lang]/tips/actions.ts` |
 | 관리 화면 `/admin/...` (로그인·가게·놀거리·팁함·기여자) · 이야기 `/admin/stories` · 검토 `/admin/review` · 오래된 정보 `/admin/stale` | `src/app/admin/` (폼 부품은 `admin/_components/`, 서버 액션은 `admin/actions.ts`) |
 | 인쇄용 메뉴판 `/print/menu/[code]` | `src/app/print/` |
@@ -20,10 +21,24 @@
 | 문구 | `src/i18n/ko.ts`, `en.ts` |
 | DB 스키마 | `supabase/migrations/` · 일회성 스크립트 `scripts/` · 테스트 `tests/` |
 
-## 디자인·부품
-- 공통 부품만 쓴다 (`src/components/`): PlaceCard, ActivityCard, StoryCard, StopCard, StoryBody, BottomNav, CategoryTabs, SaveButton, icons, Badge, FilterChips, HoursTable, InfoRow, EmptyState, FallbackNote, BackLink, LangSwitch, MapLinks, MenuMarks, SafeImage, ReportButton, TipForm, TipList, VerifiedLine, SiteFooter. 비슷한 게 있으면 새로 만들지 말고 재사용·확장한다. 관리 화면 입력 부품은 `admin/_components/ui.tsx`.
-- **새 색·새 글꼴 금지.** 색은 `src/app/globals.css`의 토큰(`sea`, `salmon`, `pine`, `sand`, `ink`, `muted`, `line` …)을 Tailwind 클래스(`bg-sea`, `text-muted`)로만 쓴다. 임의 hex, `bg-[...]`/`text-[...]` 같은 임의 값, 인라인 `style={{ color/background }}` 금지. 토큰 자체를 바꾸는 건 디자인 담당 PR에서만.
-- 화면은 **375px 폭 폰이 기준**. 모바일에서 먼저 확인한다.
+## 디자인·부품 (v4 「바다 잡지」, 2026-11 개편)
+- 디자인 명세: `yangyang-design/out/v3/d/`(결합안 D). 큰 명조 제목 · 넓은 여백 · 가는 선 · 번호 색인 · 작은 대문자 라벨 · 색면 카드 · 쪽빛 남색 뒤집힌 단락 · 입장권 모양 정보 상자 · 손그림 약도.
+- **색은 `src/app/globals.css` 토큰만.** Tailwind 클래스(`bg-deep`, `text-ink-2`, `border-rule`)나 CSS 의 `var(--deep)` 로 쓴다. **임의 hex, `bg-[...]`/`text-[...]` 같은 임의 색 값, 인라인 `style={{ color/background }}` 금지.** 토큰을 새로 만들거나 바꾸는 건 디자인 담당 PR에서만.
+  - 종이 `paper`·`paper-2`·`paper-3`·`paper-card` · 먹 `ink`·`ink-2` · 쪽빛 남색 `deep`·`deep-2`·`deep-soft` · 남색 위 글자 `on-deep`·`on-deep-2` · 해돋이 `sunrise`(장식)·`sunrise-ink`(종이 위 주황 글자)·`sunrise-pale`(남색·사진 위) · 가는 선 `rule` · 영업 중 `open` · 사진 덮개 `shade`
+  - 분류색 `c-food`·`c-cafe`·`c-stay`·`c-surf`·`c-bar`·`c-spot`·`c-life` — CSS 에서는 요소에 `cat-{분류}`(놀거리 `play-{분류}`, 이야기 `story-{갈래}`)를 붙이면 `--c` 가 그 색이 된다. 약도 그림 안에서만 `map-*`.
+  - 옛 이름(`sea`·`salmon`·`pine`·`sand`·`surface`·`muted`·`line` …)은 관리·인쇄 화면용으로 남겨 새 팔레트 값에 맞췄다. 공개 화면 새 코드는 새 이름을 쓴다.
+- **글꼴 유틸**: 제목 `font-serif`(Noto Serif KR) · 영문 장식 이탤릭 `font-display`(Cormorant Garamond) · 본문 기본 `font-sans`(IBM Plex Sans KR) · 손글씨 `font-hand`(Nanum Pen Script — 약도 지명·짧은 주석만). CSS 에서는 `var(--serif)` 등. 새 글꼴 금지. 한글 본문은 굵기 400 이상·15px 이상(PC 16~18px)·진한 색.
+- 공개 화면 지면 스타일: `magazine.css`(공통 틀·홈: `.wrap` `.sec` `.sec-head` `.label` `.it` `.rows/.row` `.noimg` `.pl` `.feature` `.story` `.more` `.btn-line`) → `magazine-places.css`(약도·장소 목록·장소 상세: `.tiles` `.grp-h` `.cover.ph-hero` `.pass` `.art-facts` `.near3`) → `magazine-pages.css`(놀거리·이야기·MY·만든 사람들). 새 화면은 이 부품을 이어 쓰고, 새 클래스는 화면 루트(`.mz-…`) 아래에 둔다.
+- **사진 규칙**: 장소는 자체 사진(보여 줄 수 있는 곳만, `placeOwnPhoto`) → 없으면 **해변·명소만** 분류 대표 사진(「분류 대표 사진」 표기), **가게는 색면 표지**(분류색 + 가는 무늬 + 큰 이름) — 가게에 대표 사진을 깔면 그 가게 음식·시설로 오해된다. 판정은 `src/lib/place-photos.ts`(`placeUsesCategoryPhoto`·`placeFallbackPhoto`) 한 곳. 놀거리·이야기는 분류 대표 사진(`components/category-visual.ts`)을 쓰되 한 화면에 같은 사진이 반복되면 색면으로. 사람이 크게 나온 사진 금지, 새 사진은 `public/images/CREDITS.md` 에 한 줄.
+- 공통 부품만 쓴다 (`src/components/`). 비슷한 게 있으면 새로 만들지 말고 재사용·확장한다.
+  - 틀: TopNav(머리 메뉴) · BottomNav(모바일 하단) · SiteFooter · Logo · Reveal(스크롤 등장) · LangSwitch
+  - 목록: CategoryTabs · FilterChips · Badge · EmptyState · SaveButton(SaveAllButton) · FallbackNote · `home/PlaceIndex` · `home/CoverShell`
+  - 상세: HoursTable · MapLinks · VerifiedLine · TipList · TipForm · ReportButton · SafeImage · PhotoFrame(`PhotoCard.tsx`) · StoryPhoto
+  - 이야기: StoryBody · StopCard(들른 곳 입장권) · `StoryCard.tsx`(storyAuthor·storyDateLine·StoryTypeBadge 도우미) — StoryBody·StopCard 는 관리 미리보기에서도 쓰므로 **Tailwind 토큰 클래스만**(관리 화면은 magazine CSS 를 안 불러온다)
+  - 약도: `map/SketchMap`(손그림 약도) · `map/MapCard`(종이 약도 카드) · `map/MapFold` · `map/MapHost` · `map/map-places`
+  - 그 밖: MenuMarks(메뉴 표시) · InstallPrompt · PwaSetup · icons · category-visual
+  - 관리 화면 입력 부품은 `admin/_components/ui.tsx`.
+- 화면은 **375px 폰과 1440px PC 둘 다** 완성. 모바일에서 먼저 확인하고, 가로 넘침이 없어야 한다(scrollWidth = 화면 폭).
 
 ## 문구·데이터
 - 화면에 보이는 모든 문구는 `src/i18n/ko.ts` **와** `en.ts`에 **같이** 추가한다 (`en`은 `satisfies Dict`라 키가 빠지면 타입 오류). 컴포넌트에 문구를 직접 쓰지 말고 `t(lang, "key")` / `tf()`.

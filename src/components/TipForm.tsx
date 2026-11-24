@@ -45,14 +45,14 @@ export function TipForm({
           <button
             type="button"
             onClick={() => openWith("tip")}
-            className="inline-flex min-h-11 items-center rounded-full bg-sea px-4 text-sm font-medium text-on-sea"
+            className="inline-flex min-h-12 items-center bg-ink px-5 text-base font-semibold text-paper hover:bg-deep"
           >
             {t(lang, "tipWrite")}
           </button>
           <button
             type="button"
             onClick={() => openWith("changed")}
-            className="inline-flex min-h-11 items-center rounded-full border border-sea bg-surface px-4 text-sm font-medium text-sea"
+            className="inline-flex min-h-12 items-center border border-ink bg-paper-card px-5 text-base font-semibold text-ink hover:bg-ink hover:text-paper"
           >
             {t(lang, "tipChangedButton")}
           </button>
