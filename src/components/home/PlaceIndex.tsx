@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { MAP_FILTER_EVENT } from "@/components/map/MapHost";
 
 export type IndexRow = {
   id: string;
@@ -26,7 +27,8 @@ const STATE_RANK = { open: 0, later: 1, none: 1, shut: 2 } as const;
 /**
  * 홈 장소 색인 — 분류 탭(누르면 이 자리에서 거른다) + 번호 색인 몇 줄 + 「전체 보기」.
  * 지금 열린 곳을 먼저, 그다음 번호(북→남) 순. 휴업은 맨 뒤.
- * side 를 주면(2단계 약도) 왼쪽 칸에 끼우고 목록은 한 단으로 바뀐다.
+ * side 를 주면(손그림 약도) 왼쪽 칸에 끼우고 목록은 한 단으로 바뀐다. 탭을 바꾸면 약도에도 알려 다른 분류 핀을 흐리게 한다.
+ * 행에는 data-row(장소 id)를 달아 약도와 서로 가리킨다.
  */
 export function PlaceIndex({
   rows,
@@ -61,7 +63,10 @@ export function PlaceIndex({
             id={`idx-tab-${x.key}`}
             aria-selected={x.key === cat}
             aria-controls="idx-rows"
-            onClick={() => setCat(x.key)}
+            onClick={() => {
+              setCat(x.key);
+              window.dispatchEvent(new CustomEvent(MAP_FILTER_EVENT, { detail: x.key }));
+            }}
           >
             {x.label}
             <sup>{x.count}</sup>
@@ -74,7 +79,7 @@ export function PlaceIndex({
           {shown.length ? (
             <ol className="rows">
               {shown.map((r) => (
-                <li key={r.id} className="row">
+                <li key={r.id} className="row" data-row={r.id}>
                   <Link href={r.href}>
                     <span className="no">{r.no}</span>
                     <div className="min-w-0">

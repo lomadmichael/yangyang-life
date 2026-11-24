@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { t, type Lang } from "@/i18n";
-import { activeTab, isMenuBoardPath, NAV_TABS } from "@/lib/nav";
+import { activeTab, hasCoverHero, isMenuBoardPath, NAV_TABS } from "@/lib/nav";
 import { LangSwitch } from "./LangSwitch";
 import { Logo } from "./Logo";
 
 /**
  * 머리 메뉴 (모든 폭, 화면 위에 고정) — 로고 · 주 메뉴 5칸(PC, lg 이상) · 호수 표기 · 언어 전환.
- * 홈(표지가 있는 화면)에서는 표지 위에서 투명 + 흰 글자, 표지를 거의 다 지나면 종이 바탕으로 바뀐다.
+ * 홈·장소 상세(사진 표지가 있는 화면)에서는 표지 위에서 투명 + 흰 글자, 표지를 거의 다 지나면 종이 바탕으로 바뀐다.
  * 홈이 아닌 화면은 처음부터 종이 바탕이고, 고정 메뉴에 본문이 가리지 않도록 같은 높이의 빈칸을 둔다.
  * 영어 메뉴판(QR 착지)에서는 주 메뉴만 뺀다. 모바일 주 메뉴는 하단 메뉴(BottomNav).
  * 서버 전용 모듈(supabase·session·access-code)은 import 하지 않는다.
@@ -19,12 +19,13 @@ export function TopNav({ lang }: { lang: Lang }) {
   const pathname = usePathname() ?? `/${lang}`;
   const menuBoard = isMenuBoardPath(pathname);
   const current = activeTab(pathname);
-  const onCover = current === "home";
+  const onCover = hasCoverHero(pathname);
   const [pastCover, setPastCover] = useState(false);
 
   useEffect(() => {
     if (!onCover) return;
-    const onScroll = () => setPastCover(window.scrollY > window.innerHeight * 0.82);
+    // 표지가 실제로 없으면(예: 없는 장소의 404) 처음부터 종이 바탕
+    const onScroll = () => setPastCover(!document.querySelector(".cover") || window.scrollY > window.innerHeight * 0.82);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
@@ -32,7 +33,7 @@ export function TopNav({ lang }: { lang: Lang }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [onCover]);
+  }, [onCover, pathname]);
 
   const clear = onCover && !pastCover;
 

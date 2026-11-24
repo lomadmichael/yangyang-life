@@ -12,6 +12,7 @@
  *   sunrise / sunrise-ink / sunrise-pale(-2)  해돋이 주황(장식·선) / 글자용 진한 주황 / 남색·사진 위 살구 글자
  *   rule                                      가는 선 (먹 22%)
  *   c-food … c-life                           분류색 (채도 낮춘 색면, 흰 글자 대비 4.5:1 이상)
+ *   map-sand / map-reed / map-pine / map-trunk / map-board   손그림 약도 그림 안에서만
  *
  * ── 옛 이름 (v1~v3 화면이 쓰는 이름 — 지우지 않고 새 팔레트 값으로 다시 잡았다) ──
  *   sea = deep, sea-strong = 더 진한 남색, sea-soft = deep-soft, salmon = sunrise, salmon-strong = sunrise-ink,
@@ -44,6 +45,12 @@
   --open: #1f6b52;          /* 영업 중 글자 */
   --open-dot: #2f8f6f;      /* 영업 중 점 */
   --shade: #0a161c;         /* 사진 위 어두운 덮개 (투명도와 섞어 쓴다) */
+  /* 손그림 약도 전용 (약도 그림 안에서만 쓴다) */
+  --map-sand: #e8d9b5;      /* 모래사장 띠 */
+  --map-reed: #8b6f55;      /* 석호 갈대 */
+  --map-pine: #4f6b57;      /* 소나무 외곽선 */
+  --map-trunk: #7a5e4a;     /* 소나무 줄기 */
+  --map-board: #f1e4c6;     /* 서핑보드 */
 
   /* 옛 이름 — 새 팔레트로 다시 잡음 (tests/pwa.test.ts 가 sea·sand 값을 PWA 색과 대조한다) */
   --sea: #16294f;

@@ -10,6 +10,7 @@ import { LANGS, isLang, t } from "@/i18n";
 import { THEME_COLOR } from "@/lib/pwa";
 import "../globals.css";
 import "../magazine.css";
+import "../magazine-places.css";
 
 // v4 글꼴 — 제목 명조(Noto Serif KR) · 영문 장식 이탤릭(Cormorant Garamond) · 본문(IBM Plex Sans KR) · 손글씨(Nanum Pen Script, 약도 지명·짧은 주석만).
 // 한글 글꼴은 라틴 부분만 미리 받고(preload) 한글 글자는 쓰일 때 unicode-range 조각으로 받는다. 손글씨는 미리 받지 않는다.

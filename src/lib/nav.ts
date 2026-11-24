@@ -30,6 +30,17 @@ export function activeTab(pathname: string): Tab | null {
   return SECTION[first] ?? null;
 }
 
+/**
+ * 화면 맨 위가 사진 표지(머리 메뉴가 투명 + 흰 글자로 겹쳐 앉는 화면)인지 — 홈 표지, 장소 상세의 큰 사진.
+ * 이런 화면에는 머리 메뉴 아래 빈칸을 두지 않는다.
+ */
+export function hasCoverHero(pathname: string): boolean {
+  const parts = pathname.split("/");
+  const first = parts[2] ?? "";
+  if (first === "") return true;
+  return first === "place" && !!parts[3];
+}
+
 /** 영어 메뉴판(QR 착지 /[lang]/m/[code]) — 주 메뉴를 그리지 않는다 */
 export function isMenuBoardPath(pathname: string): boolean {
   return pathname.split("/")[2] === "m";

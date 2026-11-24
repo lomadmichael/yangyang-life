@@ -3,16 +3,20 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { PLAY_VISUAL, STORY_VISUAL } from "@/components/category-visual";
+import { PLAY_VISUAL } from "@/components/category-visual";
 import { CoverShell } from "@/components/home/CoverShell";
 import { PlaceIndex, type IndexRow, type IndexTab } from "@/components/home/PlaceIndex";
-import { SafeImage } from "@/components/SafeImage";
+import { MapCard } from "@/components/map/MapCard";
+import { toMapPlaces } from "@/components/map/map-places";
+import { StoryPhoto } from "@/components/StoryPhoto";
 import { isLang, pickText, t, tf, type DictKey, type Lang } from "@/i18n";
-import { formatDateRange, formatToday, formatWeekdays, photoUrl, seasonLabel } from "@/lib/format";
+import { activityWhen, formatToday } from "@/lib/format";
 import { isOpenNow, seoulParts } from "@/lib/hours";
 import { CATEGORIES, CATEGORY_KEY, PLAY_CATEGORY_KEY, STORY_TYPE_KEY } from "@/lib/labels";
 import { placesQueryString, playQueryString, storiesQueryString } from "@/lib/list-query";
+import { numberPlaces } from "@/lib/neighborhood";
 import { fetchNowYangyang, oneDecimal, weatherKind, type NowYangyang } from "@/lib/now-yangyang";
+import { placeName, placeState } from "@/lib/place-view";
 import { activityEnded, inSeason } from "@/lib/play";
 import { listActivities, listContributors, listPlaces, listStories } from "@/lib/queries";
 import { activitiesForDay } from "@/lib/today";
@@ -354,33 +358,20 @@ function Intro({ lang, placeCount, playCount, storyCount }: { lang: Lang; placeC
 
 /* ───────── ④ 장소 색인 ───────── */
 
-/** 장소 번호 — 북쪽(위도 큰 곳)부터 01. 같은 위도면 이름 순. 2단계 약도 핀 번호와 같게 쓴다 */
-function numberPlaces(places: Place[]): Map<string, string> {
-  const sorted = [...places].sort((a, b) => b.lat - a.lat || a.name_ko.localeCompare(b.name_ko, "ko"));
-  return new Map(sorted.map((p, i) => [p.id, pad(i + 1)]));
-}
-
-function hasHours(p: Place): boolean {
-  return Object.values(p.hours ?? {}).some((v) => (v?.length ?? 0) > 0);
-}
-
 function PlacesSection({ lang, places, now, clock }: { lang: Lang; places: Place[]; now: Date; clock: string }) {
   const numbers = numberPlaces(places);
   const rows: IndexRow[] = places.map((p) => {
-    const row = p as unknown as Record<string, unknown>;
-    const name = pickText(row, "name", lang);
-    const summary = pickText(row, "summary", lang);
-    const open = isOpenNow(p.hours, p.status, now);
-    const state: IndexRow["state"] = p.status === "closed" ? "shut" : open ? "open" : hasHours(p) ? "later" : "none";
+    const name = placeName(p, lang);
+    const summary = pickText(p as unknown as Record<string, unknown>, "summary", lang);
+    const state = placeState(p, now);
     const stateLabel = state === "shut" ? t(lang, "statusClosed") : state === "open" ? t(lang, "openNow") : state === "later" ? t(lang, "closedNow") : "";
-    // 이름 옆 작은 글자: 국문 화면은 로마자 이름, 영문 화면은 한글 이름(영문 이름이 있을 때)
-    const sub = lang === "ko" ? p.name_roman || null : !name.fallback ? p.name_ko : p.name_roman || null;
     return {
       id: p.id,
       no: numbers.get(p.id) ?? "",
       href: `/${lang}/place/${p.slug}`,
       name: name.text,
-      sub,
+      // 이름 옆 작은 글자: 국문 화면은 로마자 이름, 영문 화면은 한글 이름
+      sub: name.sub,
       cat: p.category,
       catLabel: CATEGORY_KEY[p.category] ? t(lang, CATEGORY_KEY[p.category]) : p.category,
       summary: summary.text || null,
@@ -402,7 +393,6 @@ function PlacesSection({ lang, places, now, clock }: { lang: Lang; places: Place
 
   return (
     <section className="sec sec-first" id="places">
-      {/* 2단계: 손그림 약도는 PlaceIndex 의 side 로 넣는다 → 왼쪽 약도 · 오른쪽 목록 */}
       <div className="wrap">
         <header className="sec-head rv">
           <span className="sec-no">02</span>
@@ -417,6 +407,7 @@ function PlacesSection({ lang, places, now, clock }: { lang: Lang; places: Place
           tabs={tabs}
           tabsLabel={t(lang, "placesTabsLabel")}
           empty={t(lang, "emptyPlacesTitle")}
+          side={<MapCard lang={lang} places={toMapPlaces(places, numbers, lang)} uid="home-map" />}
           note={
             <div className="flex flex-col gap-1">
               <nav className="quick" aria-label={t(lang, "homeChipsLabel")}>
@@ -450,11 +441,6 @@ function orderActivities(list: Activity[], now: Date): PlayItem[] {
   return ordered.map((a, i) => ({ a, no: pad(i + 1), offSeason: !season(a) }));
 }
 
-function playWhen(a: Activity, lang: Lang): string {
-  if (a.kind === "dated") return formatDateRange(a.starts_on, a.ends_on, lang);
-  return seasonLabel(a.season_months ?? [], lang) ?? formatWeekdays(a.weekdays, lang);
-}
-
 function PlaySection({ lang, items }: { lang: Lang; items: PlayItem[] }) {
   // 큰 칸 1 + 작은 칸 2 — 같은 분류 대표 사진이 한 화면에 두 번 나오지 않게 분류가 다른 것으로 고른다
   const featured: PlayItem[] = [];
@@ -473,7 +459,7 @@ function PlaySection({ lang, items }: { lang: Lang; items: PlayItem[] }) {
     const title = pickText(it.a as unknown as Record<string, unknown>, "title", lang);
     const desc = pickText(it.a as unknown as Record<string, unknown>, "desc", lang);
     const photo = PLAY_VISUAL[it.a.category]?.photo;
-    const label = [cat(it.a), playWhen(it.a, lang)].filter(Boolean).join(" · ");
+    const label = [cat(it.a), activityWhen(it.a, lang)].filter(Boolean).join(" · ");
     return (
       <Link key={it.a.id} href={`/${lang}/activity/${it.a.id}`} className={`pl ${size === "big" ? "big" : ""} rv ${delay}`}>
         {photo ? (
@@ -519,7 +505,7 @@ function PlaySection({ lang, items }: { lang: Lang; items: PlayItem[] }) {
               const row = it.a as unknown as Record<string, unknown>;
               const title = pickText(row, "title", lang);
               const desc = pickText(row, "desc", lang);
-              const when = playWhen(it.a, lang);
+              const when = activityWhen(it.a, lang);
               return (
                 <li key={it.a.id}>
                   <Link href={`/${lang}/activity/${it.a.id}`} className="pi rv">
@@ -556,29 +542,6 @@ function PlaySection({ lang, items }: { lang: Lang; items: PlayItem[] }) {
 }
 
 /* ───────── ⑥ 이야기 ───────── */
-
-/** 이야기 사진: 표지 사진 → 없으면 갈래 대표 사진(+ 「분류 대표 사진」 표기) */
-function StoryPhoto({ story, lang, sizes }: { story: Story; lang: Lang; sizes: string }) {
-  const fallback = STORY_VISUAL[story.type]?.photo ?? null;
-  if (story.cover_photo) {
-    return (
-      <SafeImage
-        src={photoUrl(story.cover_photo)}
-        alt=""
-        fallbackSrc={fallback}
-        fallbackLabel={t(lang, "categoryPhotoLabel")}
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-    );
-  }
-  if (!fallback) return null;
-  return (
-    <>
-      <Image src={fallback} alt="" fill sizes={sizes} />
-      <span className="rep">{t(lang, "categoryPhotoLabel")}</span>
-    </>
-  );
-}
 
 function StoriesSection({ lang, stories }: { lang: Lang; stories: Story[] }) {
   const [lead, ...others] = stories;

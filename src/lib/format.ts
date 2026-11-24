@@ -109,3 +109,12 @@ export function seasonLabel(months: number[], lang: Lang): string | null {
     .map((m) => monthName(m, lang))
     .join(", ");
 }
+
+/** 놀거리 때: 기간 행사는 날짜 범위, 상시형은 운영 계절(없으면 요일) — 홈·장소 상세가 같이 쓴다 */
+export function activityWhen(
+  a: { kind: "dated" | "always"; starts_on: string | null; ends_on: string | null; season_months?: number[] | null; weekdays: number[] },
+  lang: Lang,
+): string {
+  if (a.kind === "dated") return formatDateRange(a.starts_on, a.ends_on, lang);
+  return seasonLabel(a.season_months ?? [], lang) ?? formatWeekdays(a.weekdays, lang);
+}

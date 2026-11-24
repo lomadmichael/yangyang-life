@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { activeTab, isMenuBoardPath, NAV_TABS } from "../src/lib/nav";
+import { activeTab, hasCoverHero, isMenuBoardPath, NAV_TABS } from "../src/lib/nav";
+
+describe("hasCoverHero", () => {
+  it("홈과 장소 상세만 사진 표지", () => {
+    expect(hasCoverHero("/ko")).toBe(true);
+    expect(hasCoverHero("/en/")).toBe(true);
+    expect(hasCoverHero("/ko/place/hyuhyuam")).toBe(true);
+    expect(hasCoverHero("/ko/places")).toBe(false);
+    expect(hasCoverHero("/ko/place")).toBe(false);
+    expect(hasCoverHero("/en/activity/1")).toBe(false);
+  });
+});
 
 describe("activeTab", () => {
   it("언어 첫 화면은 홈", () => {
