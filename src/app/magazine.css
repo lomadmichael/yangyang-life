@@ -1462,10 +1462,11 @@
     margin: 0 0 56px;
     font-family: var(--serif);
     font-weight: 400;
-    font-size: clamp(80px, 16vw, 250px);
+    font-size: clamp(80px, 15vw, 220px);
     line-height: 0.9;
     letter-spacing: -0.06em;
     color: var(--paper);
+    white-space: nowrap;
   }
   .foot-wm span {
     font-family: var(--display);
