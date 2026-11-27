@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "양양생활 YANGYANG LIFE",
     short_name: "양양생활",
-    description: "양양 현남면의 장소·놀거리·이야기 — Places, things to do and stories in Hyeonnam, Yangyang",
+    description: "양양의 장소·놀거리·이야기 — Places, things to do and stories in Yangyang",
     lang: "ko",
     start_url: "/",
     scope: "/",
