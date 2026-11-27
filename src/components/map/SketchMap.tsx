@@ -1,11 +1,7 @@
 import { t, tf, type DictKey, type Lang } from "@/i18n";
 import {
   focusViewBox,
-  inLens,
   inMap,
-  LENS,
-  lensLeader,
-  lensPoint,
   MAP_H,
   MAP_W,
   project,
@@ -166,7 +162,7 @@ function label(lat: number, lng: number, text: string, cls: string, dx = 0, dy =
   );
 }
 
-function Pin({ p, at, scale, inset = false, dim = false, near = false }: { p: MapPlace; at: Pt; scale: number; inset?: boolean; dim?: boolean; near?: boolean }) {
+function Pin({ p, at, scale, dim = false, near = false }: { p: MapPlace; at: Pt; scale: number; dim?: boolean; near?: boolean }) {
   const cls = `m-pin cat-${p.cat}${dim ? " is-dim" : ""}${near ? " is-near" : ""}`;
   const common = {
     className: cls,
@@ -185,14 +181,6 @@ function Pin({ p, at, scale, inset = false, dim = false, near = false }: { p: Ma
       </g>
     </>
   );
-  // 렌즈 안의 핀은 같은 장소의 두 번째 그림 — 키보드·화면 낭독기는 원래 핀 하나만 만나게
-  if (inset) {
-    return (
-      <a href={p.href} {...common} data-inset="1" tabIndex={-1} aria-hidden="true">
-        {body}
-      </a>
-    );
-  }
   return (
     <a href={p.href} {...common} aria-label={`${p.no}. ${p.name} · ${p.catLabel}`}>
       {body}
@@ -202,7 +190,7 @@ function Pin({ p, at, scale, inset = false, dim = false, near = false }: { p: Ma
 
 /**
  * 손그림 약도 (서버에서 SVG 를 그린다). 움직임은 MapHost(클라이언트)가 맡는다.
- *  · full  — 현남면 해안 전체 + 인구·죽도 돋보기 확대. 장소 목록 옆에 고정해 둔다
+ *  · full  — 현남면 해안 전체. 장소 목록 옆에 고정해 둔다
  *  · focus — 한 장소를 가운데 두고 확대(상세). 근처 장소(nearIds)는 그대로, 나머지 핀은 옅게
  * 핀은 약도 범위 안 좌표를 가진 장소만. 같은 정보가 지도 밖 목록에 있으므로 지형·지명은 aria-hidden.
  */
@@ -237,8 +225,6 @@ export function SketchMap({
   const near = new Set(nearIds);
   const focusAt = focusPlace ? P(focusPlace.lat, focusPlace.lng) : null;
 
-  const [lx1, lx2] = lensLeader();
-  const lensPins = full ? drawn.filter((p) => inLens(P(p.lat, p.lng))) : [];
   const sunY = MAP_H * 0.7;
   const seaX = MAP_W - 130;
   const seaY = MAP_H * 0.5;
@@ -264,11 +250,6 @@ export function SketchMap({
             <path d="M4 14 q5 -5 10 0 t10 0" className="m-wavep" />
             <path d="M27 24 q5 -5 10 0" className="m-wavep" />
           </pattern>
-          {full ? (
-            <clipPath id={`${uid}c`}>
-              <circle cx={LENS.cx} cy={LENS.cy} r={LENS.r} />
-            </clipPath>
-          ) : null}
         </defs>
 
         <g aria-hidden="true">
@@ -315,49 +296,6 @@ export function SketchMap({
           ))}
         </g>
 
-        {full ? (
-          <g className="m-inset">
-            <g aria-hidden="true">
-              <circle className="m-lens-src" cx={f1(LENS.src[0])} cy={f1(LENS.src[1])} r={f1(LENS.srcR)} />
-              <path className="m-lens-line" d={`M${f1(lx1[0])} ${f1(lx1[1])} L${f1(lx2[0])} ${f1(lx2[1])}`} />
-              <circle className="m-lens-shadow" cx={LENS.cx + 5} cy={LENS.cy + 7} r={LENS.r + 8} />
-            </g>
-            <g clipPath={`url(#${uid}c)`}>
-              <g aria-hidden="true">
-                <g transform={`translate(${LENS.cx} ${LENS.cy}) scale(${LENS.k}) translate(${f1(-LENS.src[0])} ${f1(-LENS.src[1])})`}>
-                  <Terrain uid={uid} />
-                </g>
-                {(
-                  [
-                    [37.9719, 128.7667, "mapLblJukdo"],
-                    [37.9672, 128.7641, "mapLblInguBeach"],
-                  ] as [number, number, DictKey][]
-                ).map(([la, ln, k]) => {
-                  const q = lensPoint(P(la, ln));
-                  return (
-                    <text key={k} className="m-hand" x={f1(q[0])} y={f1(q[1])}>
-                      {t(lang, k)}
-                    </text>
-                  );
-                })}
-              </g>
-              {lensPins.map((p) => (
-                <Pin key={p.id} p={p} at={lensPoint(P(p.lat, p.lng))} scale={1.45} inset dim={dim.has(p.id)} />
-              ))}
-            </g>
-            <g aria-hidden="true">
-              <circle className="m-lens-ring" cx={LENS.cx} cy={LENS.cy} r={LENS.r} />
-              <circle className="m-lens-ring2" cx={LENS.cx} cy={LENS.cy} r={LENS.r + 6} />
-              <path className="m-lens-handle" d={`M${f1(LENS.cx + LENS.r * 0.74)} ${f1(LENS.cy + LENS.r * 0.74)} l36 36`} />
-              <g transform={`translate(${LENS.cx} ${LENS.cy - LENS.r - 20})`}>
-                <rect className="m-lens-tag" x="-78" y="-15" width="156" height="26" />
-                <text className="m-lens-txt" textAnchor="middle" y="3">
-                  {t(lang, "mapLens")}
-                </text>
-              </g>
-            </g>
-          </g>
-        ) : null}
       </svg>
     </MapHost>
   );

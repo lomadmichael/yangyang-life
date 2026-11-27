@@ -68,7 +68,6 @@ export function MapHost({
       if (!byId.has(id)) return;
       const pin =
         el ??
-        host.querySelector<SVGElement>(`.m-pin[data-inset][data-pin="${esc(id)}"]`) ??
         host.querySelector<SVGElement>(`.m-pin[data-pin="${esc(id)}"]`);
       if (!pin) return;
       const [left, top] = toPercent([Number(pin.dataset.x), Number(pin.dataset.y)], viewBox);

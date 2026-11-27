@@ -380,7 +380,6 @@ export const en = {
   mapLblNamaePort: "Namae Port",
   mapLblDongsanpo: "Dongsanpo",
   mapLblMaeho: "Maeho",
-  mapLens: "Ingu & Jukdo ×2.9",
   mapHintHover: "North is up · hover a pin",
   mapHintTouch: "North is up · tap a pin",
   mapSheetTitle: "Map of Hyeonnam",
