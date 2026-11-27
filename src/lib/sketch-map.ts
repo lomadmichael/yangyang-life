@@ -83,38 +83,6 @@ export function toPercent([x, y]: Pt, vb: ViewBox): Pt {
   return [((x - vb[0]) / vb[2]) * 100, ((y - vb[1]) / vb[3]) * 100];
 }
 
-/**
- * 돋보기 확대 렌즈 — 인구·죽도 일대(장소가 가장 몰린 곳)를 오른쪽 바다 위 원 안에 2.9배로 다시 그린다.
- * src = 확대할 곳의 그림 좌표, (cx, cy, r) = 렌즈 원, k = 배율.
- */
-export const LENS = (() => {
-  const src = project(37.9701, 128.7613);
-  const k = 2.9;
-  const cx = MAP_W - 196;
-  const cy = 300;
-  const r = 172;
-  return { src, k, cx, cy, r, srcR: r / k + 4 } as const;
-})();
-
-/** 원래 그림 좌표 → 렌즈 안 좌표 */
-export function lensPoint([x, y]: Pt): Pt {
-  return [LENS.cx + (x - LENS.src[0]) * LENS.k, LENS.cy + (y - LENS.src[1]) * LENS.k];
-}
-
-/** 렌즈 안에 다시 그릴 만큼 렌즈 중심 가까이에 있는지 (가장자리에 걸린 핀은 뺀다) */
-export function inLens([x, y]: Pt): boolean {
-  const lim = LENS.r / LENS.k - 4;
-  return (x - LENS.src[0]) ** 2 + (y - LENS.src[1]) ** 2 <= lim * lim;
-}
-
-/** 렌즈에서 확대 원으로 잇는 점선의 두 끝 */
-export function lensLeader(): [Pt, Pt] {
-  const ang = Math.atan2(LENS.cy - LENS.src[1], LENS.cx - LENS.src[0]);
-  const a: Pt = [LENS.src[0] + Math.cos(ang) * LENS.srcR, LENS.src[1] + Math.sin(ang) * LENS.srcR];
-  const b: Pt = [LENS.cx - Math.cos(ang) * (LENS.r + 8), LENS.cy - Math.sin(ang) * (LENS.r + 8)];
-  return [a, b];
-}
-
 /** 축척 막대 길이 (500m, 그림 단위) */
 export const SCALE_500M = (500 / 88000) * KX;
 

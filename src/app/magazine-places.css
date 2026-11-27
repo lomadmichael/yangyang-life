@@ -256,48 +256,6 @@
   .m-pin.is-dim:focus-visible .m-pin-in {
     opacity: 1;
   }
-  /* 돋보기 */
-  .m-lens-src {
-    fill: color-mix(in srgb, var(--sunrise) 10%, transparent);
-    stroke: var(--ink);
-    stroke-width: 1.1;
-    stroke-dasharray: 4 3;
-  }
-  .m-lens-line {
-    stroke: var(--ink);
-    stroke-width: 1.1;
-    stroke-dasharray: 4 3;
-    fill: none;
-  }
-  .m-lens-shadow {
-    fill: color-mix(in srgb, var(--ink) 10%, transparent);
-  }
-  .m-lens-ring {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 2;
-  }
-  .m-lens-ring2 {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 0.8;
-  }
-  .m-lens-handle {
-    stroke: var(--ink);
-    stroke-width: 8;
-    stroke-linecap: round;
-  }
-  .m-lens-tag {
-    fill: var(--ink);
-  }
-  .m-lens-txt {
-    font: 600 13px var(--sans);
-    fill: var(--paper-card);
-    letter-spacing: 0.04em;
-  }
-  .m-inset .m-hand {
-    font-size: 28px;
-  }
   /* 확대 약도(상세)는 핀이 커서 지명을 조금 키운다 */
   .map.is-focus .m-hand {
     font-size: 26px;
@@ -1737,18 +1695,6 @@
   }
 }
 
-@layer components {
-  /* 돋보기 그림은 아래 핀을 가리지 않게 — 누르기·가리키기는 핀만 받는다 */
-  .m-inset g[aria-hidden="true"],
-  .m-inset circle,
-  .m-inset path {
-    pointer-events: none;
-  }
-  .m-inset .m-pin,
-  .m-inset .m-pin * {
-    pointer-events: auto;
-  }
-}
 
 @layer components {
   /* 영문 이름이 글자 중간에서 갈리지 않게 (정말 넘칠 때만 끊는다) */

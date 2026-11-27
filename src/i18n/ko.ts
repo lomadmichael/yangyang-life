@@ -379,7 +379,6 @@ export const ko = {
   mapLblNamaePort: "남애항",
   mapLblDongsanpo: "동산포",
   mapLblMaeho: "매호",
-  mapLens: "인구·죽도 2.9배 확대",
   mapHintHover: "위쪽이 북쪽 · 핀에 손을 올려 보세요",
   mapHintTouch: "위쪽이 북쪽 · 핀을 눌러 보세요",
   mapSheetTitle: "Map of Hyeonnam",

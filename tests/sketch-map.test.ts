@@ -4,10 +4,7 @@ import {
   distanceKm,
   focusViewBox,
   formatDistance,
-  inLens,
   inMap,
-  lensPoint,
-  LENS,
   MAP_BOUNDS,
   MAP_H,
   MAP_W,
@@ -82,16 +79,6 @@ describe("toPercent", () => {
   it("창 안 위치를 백분율로", () => {
     expect(toPercent([50, 25], [0, 0, 100, 100])).toEqual([50, 25]);
     expect(toPercent([150, 150], [100, 100, 100, 100])).toEqual([50, 50]);
-  });
-});
-
-describe("확대 렌즈", () => {
-  it("렌즈 중심은 렌즈 원 한가운데로 간다", () => {
-    expect(lensPoint(LENS.src)).toEqual([LENS.cx, LENS.cy]);
-  });
-  it("인구 일대는 렌즈 안, 남애항은 밖", () => {
-    expect(inLens(project(37.97026, 128.76192))).toBe(true); // 인구해수욕장
-    expect(inLens(project(37.94449, 128.78741))).toBe(false); // 남애항
   });
 });
 
